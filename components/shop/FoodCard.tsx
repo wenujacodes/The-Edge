@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { Heart, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { MenuItem, shopById } from "@/lib/mockData";

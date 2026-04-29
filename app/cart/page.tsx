@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -14,7 +13,7 @@ export default function CartPage() {
   const { items, setQty, remove, setNotes, setDining, total, groupedByShop } = useCart();
   const router = useRouter();
 
-  const grouped = useMemo(() => Array.from(groupedByShop().entries()), [items]);
+  const grouped = Array.from(groupedByShop().entries());
 
   if (items.length === 0) {
     return (

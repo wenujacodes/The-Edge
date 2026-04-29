@@ -8,7 +8,6 @@ import { FoodCard } from "@/components/shop/FoodCard";
 import { ShopCard } from "@/components/shop/ShopCard";
 import { mockCategories } from "@/lib/mockData";
 import { dietaryFilters } from "@/lib/designSystem";
-import type { Metadata } from "next";
 import { useMenuItems, useShops } from "@/lib/supabase/hooks";
 
 export default function BrowsePage() {

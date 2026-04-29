@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { MenuItem, shopById } from "@/lib/mockData";
+import { MenuItem } from "@/lib/mockData";
 
 // TODO: Replace with Supabase cart persistence for logged-in users
 

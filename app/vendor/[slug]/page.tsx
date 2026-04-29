@@ -7,12 +7,12 @@ import { useParams } from "next/navigation";
 import {
   ListOrdered, Utensils, BarChart3, Settings,
   Check, ChefHat, Bell, TrendingUp, DollarSign,
-  AlertCircle, Plus, Pencil, Power, Users,
+  Plus, Pencil, Power, Users,
   ArrowLeft, ToggleLeft, ToggleRight, Upload,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
 } from "recharts";
 import { shopBySlug, itemsByShop, mockOrders, mockAnalytics } from "@/lib/mockData";
 import { toast } from "sonner";
