@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Clock, Star, AlertCircle } from "lucide-react";
-import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { FoodCard } from "@/components/shop/FoodCard";
 import { useCart } from "@/store/cart";
@@ -32,7 +31,6 @@ export default function ShopPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">
           Loading shop...
         </div>
@@ -43,7 +41,6 @@ export default function ShopPage() {
   if (!shop) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-20 text-center">
           <div className="text-6xl mb-4">🔍</div>
           <h1 className="text-2xl font-bold">Shop not found</h1>
@@ -62,8 +59,6 @@ export default function ShopPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       <div className="container mx-auto px-4 py-8">
         {/* Back */}
         <Link

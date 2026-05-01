@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ReceiptText, ArrowRight, Clock, CheckCircle2, RotateCcw } from "lucide-react";
-import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
@@ -31,8 +30,6 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">Order History</h1>

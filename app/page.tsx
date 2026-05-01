@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PWABanner } from "@/components/layout/PWABanner";
 import { ShopCard } from "@/components/shop/ShopCard";
@@ -32,8 +31,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       {/* ── HERO ── */}
       <section className="relative overflow-hidden">
         <div className="container mx-auto px-4 pt-10 pb-12 md:pt-16 md:pb-20">

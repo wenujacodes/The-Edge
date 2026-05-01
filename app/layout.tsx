@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { Header } from "@/components/layout/Header";
 import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({
@@ -70,6 +71,7 @@ export default function RootLayout({
         <Providers>
           <ServiceWorkerRegister />
           <div className="flex flex-col min-h-screen">
+            <Header />
             <div className="flex-1 pb-20 md:pb-0">
               {children}
             </div>

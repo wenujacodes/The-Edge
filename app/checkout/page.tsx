@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Lock, Clock, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/store/cart";
 import { shopById } from "@/lib/mockData";
@@ -60,7 +59,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Link
           href="/cart"

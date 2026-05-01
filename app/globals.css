@@ -203,6 +203,16 @@
     background: var(--gradient-success);
   }
 
+  .profile-avatar {
+    background-color: hsl(var(--profile-hue), 70%, 85%);
+    color: hsl(var(--profile-hue), 80%, 30%);
+  }
+
+  .dark .profile-avatar {
+    background-color: hsl(var(--profile-hue), 70%, 15%);
+    color: hsl(var(--profile-hue), 80%, 60%);
+  }
+
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 

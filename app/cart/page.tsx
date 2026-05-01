@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
-import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/store/cart";
 import { shopById } from "@/lib/mockData";
@@ -18,7 +17,6 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-20 text-center">
           <div className="text-6xl mb-4">🛒</div>
           <h1 className="text-3xl font-bold tracking-tight">Your cart is empty</h1>
@@ -39,11 +37,10 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <div className="container mx-auto px-4 py-8 grid lg:grid-cols-[1fr_380px] gap-8">
         {/* Left: cart items */}
         <div>
-          <div className="label-mono mb-2">● Your order</div>
+
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Cart</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Each shop prepares your items separately — you&apos;ll get a receipt per shop.

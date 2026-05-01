@@ -32,7 +32,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         {children}
         <Toaster
           richColors
-          position="bottom-right"
+          position="top-right"
           toastOptions={{
             style: {
               background: "hsl(var(--card))",

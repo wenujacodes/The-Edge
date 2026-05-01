@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ArrowLeft, Store, CheckCircle2, Upload } from "lucide-react";
 import Link from "next/link";
-import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
 
@@ -47,7 +46,6 @@ export default function ShopRegisterPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-20 max-w-lg text-center">
           <div className="w-20 h-20 rounded-full bg-success-soft grid place-items-center mx-auto mb-6">
             <CheckCircle2 className="w-10 h-10 text-success-foreground" />
@@ -86,8 +84,6 @@ export default function ShopRegisterPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Link
           href="/"

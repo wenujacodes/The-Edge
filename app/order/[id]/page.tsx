@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Check, ChefHat, Bell, ArrowRight, Receipt, RotateCcw, AlertTriangle } from "lucide-react";
-import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { shopById } from "@/lib/mockData";
 import { useLiveOrder } from "@/lib/supabase/hooks";
@@ -101,7 +100,6 @@ export default function OrderStatusPage() {
   if (!order) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-20 text-center">
           <div className="text-6xl mb-4">📋</div>
           <p className="text-muted-foreground">No active order found.</p>
@@ -131,7 +129,6 @@ export default function OrderStatusPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
 
         {/* Expired warning */}

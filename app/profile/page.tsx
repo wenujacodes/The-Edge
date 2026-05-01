@@ -5,15 +5,24 @@ import Link from "next/link";
 import { 
   Bell, Shield, LogOut, ChevronRight, Moon, Sun, 
   BadgeCheck, Pencil, CreditCard, Heart, 
-  HelpCircle, MessageSquare, FileText, ExternalLink
+  HelpCircle, MessageSquare, FileText, ExternalLink, Check
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { Header } from "@/components/layout/Header";
-
+import { ProfileAvatar, regenerateProfileHue } from "@/components/ui/ProfileAvatar";
 export default function ProfilePage() {
   const { theme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
+  const [name, setName] = React.useState("Sarah Jenkins");
+  const [tempName, setTempName] = React.useState("Sarah Jenkins");
+  const [isEditingName, setIsEditingName] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (isEditingName && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEditingName]);
 
   React.useEffect(() => {
     setMounted(true);
@@ -29,8 +38,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] dark:bg-background">
-      <Header />
-
       <main className="container mx-auto px-4 py-8 md:py-12 pb-24">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-8 lg:gap-12">
           
@@ -40,24 +47,77 @@ export default function ProfilePage() {
               <div className="flex flex-col items-center text-center">
                 <div className="relative mb-6">
                   <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white dark:border-background shadow-elevated">
-                    <img 
-                      src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574&auto=format&fit=crop" 
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="absolute bottom-1 right-1 bg-white dark:bg-background rounded-full p-1 shadow-soft">
-                    <BadgeCheck className="w-6 h-6 text-primary fill-primary/10" />
+                    <ProfileAvatar className="w-full h-full" iconSize={64} />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-2xl font-bold tracking-tight">Sarah Jenkins</h2>
-                  <button className="text-muted-foreground hover:text-primary transition-smooth" aria-label="Edit Name">
-                    <Pencil className="w-4 h-4" />
-                  </button>
+                <div className="flex items-center justify-center w-full mb-1">
+                  <div className="w-8 shrink-0" />
+                  {isEditingName ? (
+                    <input
+                      ref={inputRef}
+                      value={tempName}
+                      maxLength={20}
+                      onChange={(e) => {
+                        if (e.target.value.length <= 20) {
+                          setTempName(e.target.value);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && tempName.trim().length > 0) {
+                          if (name !== tempName.trim()) {
+                            setName(tempName.trim());
+                            regenerateProfileHue();
+                          }
+                          setIsEditingName(false);
+                        } else if (e.key === "Escape") {
+                          setTempName(name);
+                          setIsEditingName(false);
+                        }
+                      }}
+                      onBlur={() => {
+                        if (tempName.trim().length > 0) {
+                          if (name !== tempName.trim()) {
+                            setName(tempName.trim());
+                            regenerateProfileHue();
+                          }
+                        }
+                        setIsEditingName(false);
+                      }}
+                      className="text-2xl font-bold tracking-tight bg-transparent border-b border-primary outline-none text-center min-w-0 max-w-[220px] text-foreground"
+                    />
+                  ) : (
+                    <h2 className="text-2xl font-bold tracking-tight text-center truncate">{name}</h2>
+                  )}
+                  <div className="w-8 shrink-0 flex justify-start pl-2">
+                    <button 
+                      onMouseDown={(e) => {
+                        // Prevent blur from firing before this click
+                        e.preventDefault(); 
+                      }}
+                      onClick={() => {
+                        if (isEditingName) {
+                          if (tempName.trim().length > 0) {
+                            if (name !== tempName.trim()) {
+                              setName(tempName.trim());
+                              regenerateProfileHue();
+                            }
+                            setIsEditingName(false);
+                          }
+                        } else {
+                          setTempName(name);
+                          setIsEditingName(true);
+                        }
+                      }}
+                      disabled={isEditingName && tempName.trim().length === 0}
+                      className="text-muted-foreground hover:text-primary transition-smooth focus-dashed rounded-md p-1 disabled:opacity-50 disabled:cursor-not-allowed" 
+                      aria-label="Edit Name"
+                    >
+                      {isEditingName ? <Check className="w-5 h-5 text-success" /> : <Pencil className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
-                <p className="text-muted-foreground text-sm font-medium mb-8">Engineering Student • L3</p>
+                <p className="text-muted-foreground text-sm font-medium mb-8">sarahjenkins22@gmail.com</p>
 
                 <div className="w-full grid grid-cols-3 gap-4 border-y border-border py-6 mb-8">
                   {stats.map((stat) => (

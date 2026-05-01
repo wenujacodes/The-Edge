@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ShoppingBag, Search, Home, Compass, ReceiptText, User } from "lucide-react";
 import { useCart } from "@/store/cart";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export const Header = () => {
   const count = useCart((s) => s.count());
@@ -66,10 +67,10 @@ export const Header = () => {
             </Link>
             <Link
               href="/profile"
-              className="w-10 h-10 grid place-items-center rounded-full glass-dark hover:bg-secondary transition-smooth focus-dashed"
+              className="w-10 h-10 rounded-full overflow-hidden border border-border shadow-sm hover:opacity-80 transition-smooth focus-dashed"
               aria-label="Profile"
             >
-              <User className="w-5 h-5" />
+              <ProfileAvatar className="w-full h-full" iconSize={20} />
             </Link>
           </div>
 
