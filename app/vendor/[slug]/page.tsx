@@ -47,7 +47,6 @@ export default function VendorDashboard() {
         <div className="text-center">
           <div className="text-5xl mb-4">🔍</div>
           <h1 className="text-2xl font-bold">Vendor not found</h1>
-          <Link href="/" className="text-primary mt-4 inline-block hover:underline">← Back home</Link>
         </div>
       </div>
     );
@@ -148,12 +147,6 @@ export default function VendorDashboard() {
           ))}
         </nav>
         <div className="p-4 border-t border-border">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-smooth focus-dashed"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to storefront
-          </Link>
         </div>
       </aside>
 

@@ -70,12 +70,6 @@ export default function ShopRegisterPage() {
               </div>
             ))}
           </div>
-          <Link
-            href="/"
-            className="mt-8 inline-flex pill bg-foreground text-background px-8 py-3 font-medium hover:bg-foreground/90 transition-smooth"
-          >
-            Back to home
-          </Link>
         </div>
         <Footer />
       </div>
@@ -85,13 +79,6 @@ export default function ShopRegisterPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 md:pt-28 max-w-2xl">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground focus-dashed transition-smooth mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back
-        </Link>
-
         <div className="label-mono mb-2">● Register</div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">List your shop</h1>
         <p className="text-muted-foreground mt-2">

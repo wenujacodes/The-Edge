@@ -57,7 +57,7 @@ export default function AuthPage() {
                 </h1>
                 <p className="text-muted-foreground text-lg max-w-sm leading-relaxed">
                   {mode === "login" 
-                    ? "Enter your campus email — we'll send a magic link. No passwords, ever."
+                    ? "Enter your email — we'll send a magic link. No passwords, ever."
                     : "Create your account to save your favorites and order faster across campus."
                   }
                 </p>
@@ -184,10 +184,6 @@ export default function AuthPage() {
                 </p>
               </div>
               
-              <div className="flex gap-2 pt-4">
-                <div className={`h-1 rounded-full transition-all duration-500 ${mode === 'login' ? 'w-8 bg-primary' : 'w-4 bg-white/30'}`} />
-                <div className={`h-1 rounded-full transition-all duration-500 ${mode === 'signup' ? 'w-8 bg-primary' : 'w-4 bg-white/30'}`} />
-              </div>
             </div>
           </div>
         </motion.div>
