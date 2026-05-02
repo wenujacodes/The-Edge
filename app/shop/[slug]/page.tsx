@@ -58,38 +58,42 @@ export default function ShopPage() {
   const visible = activeCat ? items.filter((i) => i.category === activeCat) : items;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        {/* Shop header */}
-        <div className="mt-6 flex items-start gap-5">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-secondary grid place-items-center text-5xl shrink-0 shadow-soft">
-            {shop.emoji}
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{shop.name}</h1>
-              <span
-                className={`pill text-[11px] font-semibold px-2.5 py-1 ${
-                  shop.isOpen
-                    ? "bg-success-soft text-success-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {shop.isOpen ? "● OPEN" : "● CLOSED"}
-              </span>
-            </div>
-            <p className="text-muted-foreground mt-1">{shop.tagline}</p>
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-2xl">
-              {shop.description}
-            </p>
+    <div className="min-h-screen bg-background pb-8">
+      {/* Banner */}
+      <div className="w-full h-48 sm:h-64 relative bg-secondary border-b border-border">
+        {shop.banner ? (
+          <img src={shop.banner} alt={shop.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full grid place-items-center text-6xl">{shop.emoji}</div>
+        )}
+      </div>
 
-            {shop.closedNote && (
-              <div className="mt-4 rounded-2xl bg-accent text-accent-foreground px-4 py-3 text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {shop.closedNote}
-              </div>
-            )}
+      <div className="container mx-auto px-4">
+        {/* Shop header */}
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{shop.name}</h1>
+            <span
+              className={`pill text-[11px] font-semibold px-2.5 py-1 ${
+                shop.isOpen
+                  ? "bg-success-soft text-success-foreground"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {shop.isOpen ? "● OPEN" : "● CLOSED"}
+            </span>
           </div>
+          <p className="text-lg text-muted-foreground font-medium">{shop.tagline}</p>
+          <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
+            {shop.description}
+          </p>
+
+          {shop.closedNote && (
+            <div className="mt-4 rounded-2xl bg-accent text-accent-foreground px-4 py-3 text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {shop.closedNote}
+            </div>
+          )}
         </div>
 
         {/* Sticky category tabs */}

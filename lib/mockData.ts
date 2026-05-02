@@ -101,6 +101,7 @@ export const mockShops: Shop[] = [
     description:
       "Handcrafted Sri Lankan confectionery made fresh every morning. From creamy milk toffee to cooling curd lassi — Rocky Sweats brings campus a taste of home.",
     emoji: "🍡",
+    banner: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&h=400&fit=crop",
     isOpen: true,
     prepTime: "5 min",
     rating: 4.8,
@@ -117,6 +118,7 @@ export const mockShops: Shop[] = [
     description:
       "Authentic Sri Lankan rice & curry, kottu roti, and short eats. Freshly cooked daily using traditional recipes passed down through generations.",
     emoji: "🍛",
+    banner: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&h=400&fit=crop",
     isOpen: true,
     prepTime: "12 min",
     rating: 4.7,
@@ -133,6 +135,7 @@ export const mockShops: Shop[] = [
     description:
       "Every cup is blended to order from fresh local fruits. No added sugar, no preservatives — just pure, cold-pressed goodness.",
     emoji: "🥤",
+    banner: "https://images.unsplash.com/photo-1546173159-315724a31696?w=800&h=400&fit=crop",
     isOpen: true,
     prepTime: "3 min",
     rating: 4.9,
@@ -149,6 +152,7 @@ export const mockShops: Shop[] = [
     description:
       "Golden-fried samosas, cutlets and rolls — made in small batches all day long. The perfect snack between lectures.",
     emoji: "🥟",
+    banner: "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&h=400&fit=crop",
     isOpen: true,
     prepTime: "4 min",
     rating: 4.6,
@@ -165,6 +169,7 @@ export const mockShops: Shop[] = [
     description:
       "Specialty coffee from single-origin Sri Lankan estate beans. Espresso, pour-overs, cold brews — crafted with care by certified baristas.",
     emoji: "☕",
+    banner: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&h=400&fit=crop",
     isOpen: false,
     closedNote: "Closed for Poya Day — back tomorrow!",
     prepTime: "6 min",
