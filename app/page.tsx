@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, ArrowRight } from "lucide-react";
+import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Footer } from "@/components/layout/Footer";
 import { PWABanner } from "@/components/layout/PWABanner";
@@ -10,6 +10,7 @@ import { ShopCard } from "@/components/shop/ShopCard";
 import { FoodCard } from "@/components/shop/FoodCard";
 import { useMenuItems, useShops } from "@/lib/supabase/hooks";
 import { useCart } from "@/store/cart";
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export default function HomePage() {
   const [query, setQuery] = useState("");
@@ -32,60 +33,48 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* ── HERO ── */}
-      <section className="relative overflow-hidden">
-        <div className="container mx-auto px-4 pt-10 pb-12 md:pt-16 md:pb-20">
-          <div className="grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center">
-            <div className="animate-fade-up">
-              <div className="label-mono mb-5">Campus food, sorted</div>
-              <h1 className="text-[44px] sm:text-6xl lg:text-7xl font-bold leading-[0.95] tracking-tight">
-                Order ahead.<br />
-                Skip the queue.<br />
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-[hsl(190_95%_55%)] to-success">
-                  Pick up when ready.
-                </span>
-              </h1>
-              <p className="mt-6 text-lg text-muted-foreground max-w-xl leading-relaxed">
-                One tap for fried rice, mango juice or a quick samosa. Pay online and grab it from the vendor with your pickup code — no waiting.
-              </p>
-
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  href="/browse"
-                  id="hero-cta-browse"
-                  className="inline-flex items-center gap-2 pill bg-foreground text-background px-6 py-3.5 font-medium hover:bg-foreground/90 transition-smooth focus-dashed shadow-pop"
-                >
-                  Start Ordering <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-
-              <div className="mt-8 flex items-center gap-4 text-xs text-muted-foreground">
-                <div className="flex -space-x-2">
-                  {shops.slice(0, 4).map((s) => (
-                    <div
-                      key={s.id}
-                      className="w-7 h-7 rounded-full bg-secondary border-2 border-background grid place-items-center text-sm"
-                    >
-                      {s.emoji}
-                    </div>
-                  ))}
-                </div>
-                <span>
-                  <span className="font-semibold text-foreground">{shops.length} vendors</span> serving the campus today
-                </span>
+      <section className="relative overflow-hidden pt-6 pb-2 md:pt-12 md:pb-8 bg-gradient-to-b from-[#eaf8e3] to-background dark:from-[#1a2e1d] dark:to-background">
+        <div className="container mx-auto px-4">
+          <div className="animate-fade-up">
+            {/* Profile Greeting */}
+            <div className="flex items-center gap-3 mb-8 md:hidden">
+              <Link href="/profile" className="w-12 h-12 rounded-full overflow-hidden border border-border shadow-sm hover:opacity-80 transition-smooth focus-dashed">
+                <ProfileAvatar className="w-full h-full" iconSize={24} />
+              </Link>
+              <div>
+                <div className="text-[13px] text-muted-foreground font-medium">Good Morning,</div>
+                <div className="text-lg font-semibold leading-tight text-foreground">Samantha</div>
               </div>
             </div>
 
-            {/* Hero visual */}
-            <div className="relative animate-fade-up hidden lg:block">
-              <div className="aspect-square rounded-[2rem] hero-gradient p-3 shadow-pop">
-                <div className="w-full h-full rounded-[1.6rem] bg-white/10 backdrop-blur-sm grid place-items-center">
-                  <div className="text-center">
-                    <div className="text-8xl mb-4">🍛</div>
-                    <div className="text-white font-bold text-2xl">Campus Canteen</div>
-                    <div className="text-white/70 text-sm mt-1">Order • Pay • Pick up</div>
+            {/* Main Headline */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium tracking-tight leading-[1.1] mb-6">
+              Feeling hungry?<br />
+              What are we cookin&apos; today?
+            </h1>
+
+            {/* Vendors Section */}
+            <div className="mb-4 flex items-center gap-3 text-sm text-muted-foreground">
+              <div className="flex -space-x-2">
+                {shops.length > 0 ? shops.slice(0, 5).map((s, idx) => (
+                  <div
+                    key={s.id || idx}
+                    className="w-8 h-8 rounded-full bg-secondary border-2 border-background grid place-items-center text-sm shadow-sm relative z-10"
+                  >
+                    {s.emoji || ["🍡", "🍛", "🥤", "🥟", "🍩"][idx % 5]}
                   </div>
-                </div>
+                )) : ["🍡", "🍛", "🥤", "🥟", "🍩"].map((emoji, idx) => (
+                  <div
+                    key={idx}
+                    className="w-8 h-8 rounded-full bg-secondary border-2 border-background grid place-items-center text-sm shadow-sm relative z-10"
+                  >
+                    {emoji}
+                  </div>
+                ))}
               </div>
+              <span>
+                <span className="font-semibold text-foreground">{shops.length > 0 ? shops.length : 5} vendors</span> serving the campus today
+              </span>
             </div>
           </div>
         </div>
