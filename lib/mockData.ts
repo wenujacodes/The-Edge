@@ -436,17 +436,24 @@ export function getNextOrderCode(): string {
 }
 
 /** Generate a unique reference number for an order
- *  Format: #[ShopLetter][RandomLetter][DDMM][HHMM][OrderCode]
- *  Example: #RF0305 14320001
+ *  Format: [ShopLetter][RandomLetter] [DDMM] [DDMMYY] [OrderCode]
+ *  Display: #RF 1203 020526 0001
+ *  Stored without # so URLs stay clean. The # is added for display only.
  */
 export function generateReferenceNumber(shopLetterCode: string, orderCode: string): string {
   const randomLetter = "ABCDEFGHJKLMNPQRSTUVWXYZ"[Math.floor(Math.random() * 23)];
   const now = new Date();
   const dd = String(now.getDate()).padStart(2, "0");
   const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yy = String(now.getFullYear()).slice(-2);
   const hh = String(now.getHours()).padStart(2, "0");
   const min = String(now.getMinutes()).padStart(2, "0");
-  return `#${shopLetterCode}${randomLetter}${dd}${mm}${hh}${min}${orderCode}`;
+  return `${shopLetterCode}${randomLetter} ${hh}${min} ${dd}${mm}${yy} ${orderCode}`;
+}
+
+/** Format a reference number for display with # prefix */
+export function displayReferenceNumber(ref: string): string {
+  return `#${ref}`;
 }
 
 /** Format time as HH.MM (24-hour) */
@@ -479,7 +486,7 @@ export const mockUserOrders: PerShopOrder[] = [
   {
     id: "ORD-1A",
     orderCode: "0001",
-    referenceNumber: "#DK03051430 0001",
+    referenceNumber: "DK 1430 030526 0001",
     shopId: "desi",
     shopName: "Desi Palace",
     shopEmoji: "🍛",
@@ -495,7 +502,7 @@ export const mockUserOrders: PerShopOrder[] = [
   {
     id: "ORD-1B",
     orderCode: "0002",
-    referenceNumber: "#DM01051215 0002",
+    referenceNumber: "DM 1215 010526 0002",
     shopId: "desi",
     shopName: "Desi Palace",
     shopEmoji: "🍛",
@@ -511,7 +518,7 @@ export const mockUserOrders: PerShopOrder[] = [
   {
     id: "ORD-2A",
     orderCode: "0003",
-    referenceNumber: "#JN28041030 0003",
+    referenceNumber: "JN 1030 280426 0003",
     shopId: "juice",
     shopName: "Juice Hub",
     shopEmoji: "🥤",
@@ -527,7 +534,7 @@ export const mockUserOrders: PerShopOrder[] = [
   {
     id: "ORD-3A",
     orderCode: "0004",
-    referenceNumber: "#RH21040900 0004",
+    referenceNumber: "RH 0900 210426 0004",
     shopId: "rocky",
     shopName: "Rocky Sweats",
     shopEmoji: "🍡",
@@ -543,7 +550,7 @@ export const mockUserOrders: PerShopOrder[] = [
   {
     id: "ORD-4A",
     orderCode: "0005",
-    referenceNumber: "#SA13041545 0005",
+    referenceNumber: "SA 1545 130426 0005",
     shopId: "snack",
     shopName: "Short Eats Co.",
     shopEmoji: "🥟",
@@ -559,7 +566,7 @@ export const mockUserOrders: PerShopOrder[] = [
   {
     id: "ORD-5A",
     orderCode: "0006",
-    referenceNumber: "#DB19030830 0006",
+    referenceNumber: "DB 0830 190326 0006",
     shopId: "desi",
     shopName: "Desi Palace",
     shopEmoji: "🍛",

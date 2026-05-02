@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import type { PerShopOrder } from "@/lib/mockData";
+import { displayReferenceNumber, type PerShopOrder } from "@/lib/mockData";
 
 export function ReceiptCard({ order }: { order: PerShopOrder }) {
   const formattedDate = new Date(order.placedAt).toLocaleDateString("en-US", {
@@ -64,7 +64,7 @@ export function ReceiptCard({ order }: { order: PerShopOrder }) {
         {/* Reference number */}
         <div className="rounded-xl bg-secondary/80 px-3 py-2 mb-4">
           <div className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-1">Ref No.</div>
-          <div className="font-mono text-sm font-bold tracking-wide">{order.referenceNumber}</div>
+          <div className="font-mono text-sm font-bold tracking-wide">{displayReferenceNumber(order.referenceNumber)}</div>
         </div>
 
         {/* Dashed divider */}

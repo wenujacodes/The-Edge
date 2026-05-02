@@ -90,9 +90,9 @@ export default function CheckoutPage() {
       clear();
       toast.success("Payment confirmed! Your order is being prepared.");
 
-      // Navigate to the first order's detail page
+      // Navigate to the first order's detail page (use reference number as unique ID)
       if (perShopOrders.length > 0) {
-        router.push(`/order/${perShopOrders[0].orderCode}`);
+        router.push(`/order/${encodeURIComponent(perShopOrders[0].referenceNumber)}`);
       }
     }, 1500);
   };

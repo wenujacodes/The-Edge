@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Check, ChefHat, Bell, ArrowRight, RotateCcw, AlertTriangle } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Check, ChefHat, Bell, ArrowRight, ArrowLeft, RotateCcw, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
 import { ReceiptCard } from "@/components/ui/ReceiptCard";
 import { useLiveOrder } from "@/lib/supabase/hooks";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
-import type { PerShopOrder } from "@/lib/mockData";
+import { mockUserOrders, type PerShopOrder } from "@/lib/mockData";
 
 type Stage = 0 | 1 | 2;
 
@@ -21,53 +21,116 @@ const stages = [
 
 export default function OrderStatusPage() {
   const params = useParams();
-  const code = params?.id as string;
+  const router = useRouter();
+  const rawId = decodeURIComponent(params?.id as string);
   const [stage, setStage] = useState<Stage>(0);
-  const [orders, setOrders] = useState<PerShopOrder[]>([]);
+  const [order, setOrder] = useState<PerShopOrder | null>(null);
+  const [allOrders, setAllOrders] = useState<PerShopOrder[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [expired, setExpired] = useState(false);
   const { add } = useCart();
-  const { data: liveOrder } = useLiveOrder(code);
+  const { data: liveOrder } = useLiveOrder(rawId);
 
+  // Swipe tracking
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Load all orders and find the current one by reference number
   useEffect(() => {
-    if (liveOrder) return;
-
-    // Load from localStorage — try last-orders first (multi-shop checkout)
-    const lastOrders = localStorage.getItem("edge-last-orders");
-    if (lastOrders) {
+    // Gather all orders from localStorage + mock
+    let merged: PerShopOrder[] = [...mockUserOrders];
+    const saved = localStorage.getItem("edge-orders");
+    if (saved) {
       try {
-        const parsed: PerShopOrder[] = JSON.parse(lastOrders);
-        // Filter orders matching this code, or show all if navigating from checkout
-        const matching = parsed.filter((o) => o.orderCode === code);
-        if (matching.length > 0) {
-          setOrders(matching);
-        } else {
-          // If code doesn't match, show all from last checkout
-          setOrders(parsed);
-        }
+        const local: PerShopOrder[] = JSON.parse(saved);
+        merged = [...local, ...merged];
       } catch {}
     }
+    // Sort by date desc
+    merged.sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
+    setAllOrders(merged);
 
-    // Fallback: search in all orders
-    if (!lastOrders) {
-      const allOrders = localStorage.getItem("edge-orders");
-      if (allOrders) {
+    // Find the order matching the reference number
+    const idx = merged.findIndex((o) => o.referenceNumber === rawId);
+    if (idx >= 0) {
+      setOrder(merged[idx]);
+      setCurrentIndex(idx);
+    } else {
+      // Fallback: also check last-orders from checkout
+      const lastOrders = localStorage.getItem("edge-last-orders");
+      if (lastOrders) {
         try {
-          const parsed: PerShopOrder[] = JSON.parse(allOrders);
-          const matching = parsed.filter((o) => o.orderCode === code);
-          if (matching.length > 0) {
-            setOrders(matching);
+          const parsed: PerShopOrder[] = JSON.parse(lastOrders);
+          const found = parsed.find((o) => o.referenceNumber === rawId);
+          if (found) {
+            setOrder(found);
+            // The allOrders already includes these so find index
+            const foundIdx = merged.findIndex((o) => o.referenceNumber === rawId);
+            setCurrentIndex(foundIdx >= 0 ? foundIdx : 0);
           }
         } catch {}
       }
     }
+  }, [rawId]);
+
+  // Navigate to adjacent order
+  const navigateTo = useCallback((index: number) => {
+    if (index >= 0 && index < allOrders.length) {
+      const target = allOrders[index];
+      router.push(`/order/${encodeURIComponent(target.referenceNumber)}`);
+    }
+  }, [allOrders, router]);
+
+  // Swipe handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    const diff = touchStartX.current - touchEndX.current;
+    const threshold = 60;
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0 && currentIndex < allOrders.length - 1) {
+        // Swipe left → next (older) order
+        navigateTo(currentIndex + 1);
+      } else if (diff < 0 && currentIndex > 0) {
+        // Swipe right → previous (newer) order
+        navigateTo(currentIndex - 1);
+      }
+    }
+  }, [currentIndex, allOrders.length, navigateTo]);
+
+  // Keyboard arrow navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft" && currentIndex > 0) {
+        navigateTo(currentIndex - 1);
+      } else if (e.key === "ArrowRight" && currentIndex < allOrders.length - 1) {
+        navigateTo(currentIndex + 1);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentIndex, allOrders.length, navigateTo]);
+
+  // Timer effects for demo
+  useEffect(() => {
+    if (liveOrder) return;
 
     const t1 = setTimeout(() => setStage(1), 2500);
     const t2 = setTimeout(() => {
       setStage(2);
-      toast.success("🎉 Your order is ready for pickup!", {
-        description: `Show code ${code} at the counter`,
-        duration: 8000,
-      });
+      if (order) {
+        toast.success("🎉 Your order is ready for pickup!", {
+          description: `Show code ${order.orderCode} at the counter`,
+          duration: 8000,
+        });
+      }
     }, 6000);
 
     const t3 = setTimeout(() => {
@@ -82,7 +145,7 @@ export default function OrderStatusPage() {
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [code, liveOrder]);
+  }, [rawId, liveOrder, order]);
 
   useEffect(() => {
     if (!liveOrder) return;
@@ -101,8 +164,8 @@ export default function OrderStatusPage() {
 
     const livePerShop: PerShopOrder = {
       id: liveOrder.id,
-      orderCode: code,
-      referenceNumber: "",
+      orderCode: "",
+      referenceNumber: rawId,
       shopId: liveOrder.items[0]?.shopId || "",
       shopName: "Campus vendor",
       shopEmoji: "🍽️",
@@ -130,10 +193,10 @@ export default function OrderStatusPage() {
       placedAt: new Date().toISOString(),
       slot: "ASAP",
     };
-    setOrders([livePerShop]);
-  }, [liveOrder, code]);
+    setOrder(livePerShop);
+  }, [liveOrder, rawId]);
 
-  if (orders.length === 0) {
+  if (!order) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-20 md:pt-36 text-center">
@@ -149,18 +212,24 @@ export default function OrderStatusPage() {
   }
 
   const handleReorder = () => {
-    // TODO: Replace with Supabase query to fetch original order items
-    orders.forEach((order) => {
-      order.items.forEach((c) => {
-        add(c.item, c.qty, { notes: c.notes, dining: c.dining as "dine-in" | "takeaway" });
-      });
+    order.items.forEach((c) => {
+      add(c.item, c.qty, { notes: c.notes, dining: c.dining as "dine-in" | "takeaway" });
     });
     toast.success("Items added to cart!");
   };
 
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < allOrders.length - 1;
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 md:pt-28 max-w-2xl">
+      <div
+        ref={containerRef}
+        className="container mx-auto px-4 py-8 md:pt-28 max-w-2xl"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
 
         {/* Expired warning */}
         {expired && (
@@ -173,11 +242,32 @@ export default function OrderStatusPage() {
           </div>
         )}
 
-        {/* Per-shop receipts — shown at the top */}
-        <div className="space-y-4 mb-8">
-          {orders.map((order) => (
-            <ReceiptCard key={order.id} order={order} />
-          ))}
+        {/* Swipe navigation indicator */}
+        {allOrders.length > 1 && (
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => hasPrev && navigateTo(currentIndex - 1)}
+              disabled={!hasPrev}
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-smooth focus-dashed disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" /> Newer
+            </button>
+            <span className="text-xs text-muted-foreground font-mono">
+              {currentIndex + 1} / {allOrders.length}
+            </span>
+            <button
+              onClick={() => hasNext && navigateTo(currentIndex + 1)}
+              disabled={!hasNext}
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-smooth focus-dashed disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Older <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Receipt */}
+        <div className="mb-8">
+          <ReceiptCard order={order} />
         </div>
 
         {/* Progress timeline */}

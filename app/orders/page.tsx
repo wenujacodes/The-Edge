@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
-import { mockUserOrders, type PerShopOrder } from "@/lib/mockData";
+import { mockUserOrders, displayReferenceNumber, type PerShopOrder } from "@/lib/mockData";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<PerShopOrder[]>([]);
@@ -173,7 +173,7 @@ export default function OrdersPage() {
 
                     {/* Reference number */}
                     <div className="text-[11px] font-mono text-muted-foreground mb-3 pl-0.5">
-                      Ref: {order.referenceNumber}
+                      Ref: {displayReferenceNumber(order.referenceNumber)}
                     </div>
 
                     {/* Actions */}
@@ -186,7 +186,7 @@ export default function OrdersPage() {
                         <RotateCcw className="w-3.5 h-3.5" /> Reorder
                       </button>
                       <Link
-                        href={`/order/${order.orderCode}`}
+                        href={`/order/${encodeURIComponent(order.referenceNumber)}`}
                         className="inline-flex items-center gap-1 text-sm text-primary hover:underline focus-dashed"
                       >
                         View receipt <ArrowRight className="w-4 h-4" />
