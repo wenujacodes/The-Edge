@@ -1,9 +1,10 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,15 +15,39 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const isVendorPage = pathname.startsWith("/vendor");
   const isAuthPage = pathname === "/auth" || pathname.startsWith("/auth/");
   
+  const [loading, setLoading] = useState(true);
+  
   useEffect(() => {
-    // Simulated frontend auth guard
-    const isOnboarded = localStorage.getItem("edge-onboarded");
-    if (!isOnboarded && !isLoginPage && !isVendorPage && !isAuthPage) {
-      router.push("/auth");
-    }
+    const checkAuth = async () => {
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user && !isLoginPage && !isVendorPage && !isAuthPage) {
+        router.replace("/auth");
+      } else {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
   }, [pathname, isLoginPage, isVendorPage, isAuthPage, router]);
   
   const hideNav = isLoginPage || isVendorPage || isAuthPage;
+
+  if (loading && !hideNav) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (hideNav) {
     return <>{children}</>;

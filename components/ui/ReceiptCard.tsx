@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import type { PerShopOrder } from "@/lib/mockData";
+import { displayReferenceNumber, type PerShopOrder } from "@/lib/mockData";
 
 export function ReceiptCard({ order }: { order: PerShopOrder }) {
   const formattedDate = new Date(order.placedAt).toLocaleDateString("en-US", {
@@ -64,7 +64,7 @@ export function ReceiptCard({ order }: { order: PerShopOrder }) {
         {/* Reference number */}
         <div className="rounded-xl bg-secondary/80 px-3 py-2 mb-4">
           <div className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-1">Ref No.</div>
-          <div className="font-mono text-sm font-bold tracking-wide">{order.referenceNumber}</div>
+          <div className="font-mono text-sm font-bold tracking-wide">{displayReferenceNumber(order.referenceNumber)}</div>
         </div>
 
         {/* Dashed divider */}
@@ -78,17 +78,23 @@ export function ReceiptCard({ order }: { order: PerShopOrder }) {
 
         {/* Items list */}
         <div className="space-y-2.5 mb-3">
-          {order.items.map((c, idx) => (
-            <div key={idx} className="flex justify-between items-start text-base">
-              <div className="flex-1 min-w-0 pr-3">
-                <span className="font-semibold">{c.qty}<span className="text-muted-foreground mx-1 text-sm">×</span>{c.item.title}</span>
-                {c.notes && (
-                  <div className="text-xs text-muted-foreground italic mt-0.5">Note: {c.notes}</div>
-                )}
+          {order.items.map((c: any, idx) => {
+            const title = c.title || c.item?.title || "Item";
+            const price = c.price || c.unitPrice || c.item?.price || 0;
+            const quantity = c.qty || c.quantity || 0;
+            
+            return (
+              <div key={idx} className="flex justify-between items-start text-base">
+                <div className="flex-1 min-w-0 pr-3">
+                  <span className="font-semibold">{quantity}<span className="text-muted-foreground mx-1 text-sm">×</span>{title}</span>
+                  {c.notes && (
+                    <div className="text-xs text-muted-foreground italic mt-0.5">Note: {c.notes}</div>
+                  )}
+                </div>
+                <span className="font-mono text-base font-semibold shrink-0">Rs {quantity * price}</span>
               </div>
-              <span className="font-mono text-base font-semibold shrink-0">Rs {c.qty * c.item.price}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Dashed divider */}

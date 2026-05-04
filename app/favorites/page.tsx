@@ -4,13 +4,15 @@ import { Heart } from "lucide-react";
 import Link from "next/link";
 import { Footer } from "@/components/layout/Footer";
 import { FoodCard } from "@/components/shop/FoodCard";
-import { mockItems } from "@/lib/mockData";
 import { useCart } from "@/store/cart";
+import { useAllMenuItems, useServerFavorites, useSupabaseUser } from "@/lib/supabase/hooks";
 
 export default function FavoritesPage() {
-  const { favorites } = useCart();
-  // TODO: Replace with Supabase query for logged-in users — SELECT * FROM user_favorites WHERE user_id = auth.uid()
-  const favItems = mockItems.filter((i) => favorites.includes(i.id));
+  const { data: user } = useSupabaseUser();
+  const { data: serverFavorites = [] } = useServerFavorites(user?.id);
+  const { data: allItems = [] } = useAllMenuItems();
+  
+  const favItems = allItems.filter((i) => serverFavorites.includes(i.id));
 
   return (
     <div className="min-h-screen bg-background">

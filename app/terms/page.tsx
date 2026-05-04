@@ -1,12 +1,8 @@
 "use client";
 
 import { Footer } from "@/components/layout/Footer";
-import { ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 export default function TermsPage() {
-  const router = useRouter();
-
   return (
     <div className="min-h-screen bg-background">
       
@@ -35,7 +31,7 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold text-foreground mb-4">3. Ordering and Payments</h2>
             <p>
               All orders are subject to availability. Payments are processed securely. Once an order is 
-              placed and confirmed by the vendor, cancellation policies may apply based on the vendor's specific rules.
+              placed and confirmed by the vendor, cancellation policies may apply based on the vendor&apos;s specific rules.
             </p>
           </section>
 

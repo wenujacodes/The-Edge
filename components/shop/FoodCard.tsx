@@ -3,8 +3,9 @@
 import Image from "next/image";
 import { Heart, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { MenuItem, shopById } from "@/lib/mockData";
+import { MenuItem } from "@/lib/mockData";
 import { useCart } from "@/store/cart";
+import { useShopById, useToggleFavorite, useSupabaseUser, useServerFavorites } from "@/lib/supabase/hooks";
 
 interface FoodCardProps {
   item: MenuItem;
@@ -13,9 +14,13 @@ interface FoodCardProps {
 }
 
 export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => {
-  const { add, toggleFav, favorites } = useCart();
-  const fav = favorites.includes(item.id);
-  const shop = shopById(item.shopId);
+  const { data: user } = useSupabaseUser();
+  const { data: serverFavorites = [] } = useServerFavorites(user?.id);
+  const { mutate: toggleServerFav } = useToggleFavorite();
+  const { add } = useCart();
+  
+  const fav = serverFavorites.includes(item.id);
+  const { data: shop } = useShopById(item.shopId);
 
   return (
     <article className="group relative transition-smooth hover:shadow-elevated rounded-3xl">
@@ -35,7 +40,11 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
             id={`fav-btn-${item.id}`}
             onClick={(e) => {
               e.preventDefault();
-              toggleFav(item.id);
+              if (!user) {
+                toast.error("Please login to save favorites");
+                return;
+              }
+              toggleServerFav({ userId: user.id, menuItemId: item.id, isFavorite: fav });
               toast(fav ? "Removed from favorites" : "Added to favorites");
             }}
             aria-label={fav ? "Remove from favorites" : "Add to favorites"}

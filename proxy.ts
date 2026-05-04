@@ -1,39 +1,91 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({
+// Simulated rate limiting for testing phase
+// In production, use @upstash/ratelimit with Redis
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 1000; // Increased for testing phase as requested
+const ipRequests = new Map<string, { count: number, lastReset: number }>();
+const PUBLIC_FILE = /\.[^/]+$/;
+
+export default async function proxy(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for") || "anonymous";
+  const now = Date.now();
+  const userData = ipRequests.get(ip) || { count: 0, lastReset: now };
+
+  // Reset window if needed
+  if (now - userData.lastReset > RATE_LIMIT_WINDOW) {
+    userData.count = 0;
+    userData.lastReset = now;
+  }
+
+  userData.count++;
+  ipRequests.set(ip, userData);
+
+  if (userData.count > MAX_REQUESTS) {
+    return new NextResponse("Rate limit exceeded. Please try again later.", { status: 429 });
+  }
+
+  const pathname = request.nextUrl.pathname;
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
-  // Frontend-only simulation: check for a cookie instead of Supabase auth
-  const onboardedCookie = request.cookies.get("edge-onboarded")?.value;
-  const isUserOnboarded = onboardedCookie === "true";
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  let user = null;
 
-  // If user is not logged in and trying to access a protected route (anything except /auth and public assets)
-  const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
-  const isPublicRoute = 
-    request.nextUrl.pathname.startsWith("/terms") || 
-    request.nextUrl.pathname.startsWith("/privacy") ||
-    request.nextUrl.pathname.startsWith("/vendor");
+  if (url && anonKey) {
+    const supabase = createServerClient(url, anonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet, headers) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
 
-  const isPublicAsset = 
-    request.nextUrl.pathname.startsWith("/_next") || 
-    request.nextUrl.pathname.startsWith("/api") ||
-    request.nextUrl.pathname.startsWith("/icons") ||
-    request.nextUrl.pathname.startsWith("/images") ||
-    request.nextUrl.pathname.startsWith("/manifest.json") ||
-    request.nextUrl.pathname === "/favicon.ico";
+          Object.entries(headers).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+        },
+      },
+    });
 
-  if (!isUserOnboarded && !isAuthPage && !isPublicRoute && !isPublicAsset) {
+    ({ data: { user } } = await supabase.auth.getUser());
+  }
+
+  const isAuthPage = pathname.startsWith("/auth") || pathname === "/login";
+  const isPublicRoute =
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/vendor");
+  const isPublicAsset =
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname === "/favicon.ico" ||
+    pathname === "/manifest.json" ||
+    pathname === "/sw.js" ||
+    PUBLIC_FILE.test(pathname);
+
+  if (!user && !isAuthPage && !isPublicRoute && !isPublicAsset) {
     return NextResponse.redirect(new URL("/auth", request.url));
   }
 
-  // If user is logged in and trying to access the auth page, redirect to home
-  if (isUserOnboarded && isAuthPage) {
-    return NextResponse.redirect(new URL("/", request.url));
+  if (user && isAuthPage) {
+    const redirectResponse = NextResponse.redirect(new URL("/browse", request.url));
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie);
+    });
+    response.headers.forEach((value, key) => {
+      if (key.toLowerCase() !== "location") {
+        redirectResponse.headers.set(key, value);
+      }
+    });
+    return redirectResponse;
   }
 
   return response;

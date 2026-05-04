@@ -1,178 +1,263 @@
--- THE EDGE Phase 2 Supabase schema
--- Run this in the Supabase SQL editor after creating a new project.
+-- THE EDGE Phase 2 - Production Schema
+-- Final version with Multi-shop support, Daily Codes, and Sync
 
+-- 1. EXTENSIONS
 create extension if not exists pgcrypto;
 
-create type public.order_status as enum (
-  'new',
-  'preparing',
-  'ready',
-  'completed',
-  'expired',
-  'customer_late'
-);
+-- 2. TABLES
 
-create type public.dining_option as enum ('dine-in', 'takeaway');
-create type public.payment_status as enum ('pending', 'paid', 'failed', 'refunded');
-
+-- Profiles (extends auth.users)
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  email text,
-  full_name text,
+  display_name text not null default '',
+  email text not null default '',
   avatar_url text,
-  role text not null default 'student' check (role in ('student', 'vendor', 'admin')),
-  preferences jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  total_orders integer not null default 0,
+  tier text not null default 'bronze' check (tier in ('bronze', 'silver', 'gold', 'platinum', 'diamond')),
+  created_at timestamptz not null default now()
 );
 
+-- Shops
 create table public.shops (
   id uuid primary key default gen_random_uuid(),
-  owner_id uuid references public.profiles(id) on delete set null,
+  owner_id uuid references auth.users(id) on delete set null,
   slug text not null unique,
   name text not null,
-  tagline text not null default '',
-  description text not null default '',
-  emoji text not null default '🍽️',
+  tagline text,
+  description text,
+  emoji text default '🍽️',
   banner_url text,
   logo_url text,
   is_open boolean not null default true,
   closed_note text,
-  prep_time_minutes integer not null default 10 check (prep_time_minutes >= 0),
-  rating numeric(2,1) not null default 0 check (rating >= 0 and rating <= 5),
-  review_count integer not null default 0 check (review_count >= 0),
-  tags text[] not null default '{}',
-  categories text[] not null default '{}',
+  prep_time_minutes integer not null default 10,
+  rating numeric not null default 0,
+  review_count integer not null default 0,
+  tags text[],
+  categories text[],
   payment_link text,
+  letter_code text, -- 2 letter code for reference numbers (e.g. 'RS' for Rocky Sweets)
   is_approved boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  available_time_slots jsonb not null default '{"default": ["ASAP"]}'::jsonb,
+  created_at timestamptz not null default now()
 );
 
+-- Menu Items
 create table public.menu_items (
   id uuid primary key default gen_random_uuid(),
   shop_id uuid not null references public.shops(id) on delete cascade,
   title text not null,
-  description text not null default '',
+  description text,
   image_url text,
-  price_lkr integer not null check (price_lkr >= 0),
-  discount_lkr integer check (discount_lkr is null or discount_lkr >= 0),
+  price_lkr integer not null,
+  discount_lkr integer,
   category text not null,
-  dietary_tags text[] not null default '{}',
-  estimated_prep_time_minutes integer not null default 10 check (estimated_prep_time_minutes >= 0),
-  available_slots text[] not null default '{}',
-  max_per_order integer check (max_per_order is null or max_per_order > 0),
+  dietary_tags text[],
+  estimated_prep_time_minutes integer not null default 10,
+  available_slots text[],
+  max_per_order integer,
   is_available boolean not null default true,
   badge text,
   is_popular boolean not null default false,
+  search_keywords text[],
+  item_time_slots jsonb,
   sort_order integer not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table public.orders (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.profiles(id) on delete set null,
-  status public.order_status not null default 'new',
-  total_amount_lkr integer not null check (total_amount_lkr >= 0),
-  pickup_time timestamptz not null,
-  pickup_code text not null unique default upper(substr(encode(gen_random_bytes(5), 'hex'), 1, 8)),
-  note text,
-  payment_status public.payment_status not null default 'pending',
-  payment_provider text,
-  payment_reference text,
-  expires_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table public.order_items (
-  id uuid primary key default gen_random_uuid(),
-  order_id uuid not null references public.orders(id) on delete cascade,
-  shop_id uuid not null references public.shops(id) on delete restrict,
-  menu_item_id uuid references public.menu_items(id) on delete set null,
-  item_title text not null,
-  quantity integer not null check (quantity > 0),
-  unit_price_lkr integer not null check (unit_price_lkr >= 0),
-  notes text,
-  dining public.dining_option not null default 'takeaway',
-  shop_pin text not null default lpad(floor(random() * 10000)::text, 4, '0'),
   created_at timestamptz not null default now()
 );
 
-create table public.favorites (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles(id) on delete cascade,
-  shop_id uuid references public.shops(id) on delete cascade,
-  menu_item_id uuid references public.menu_items(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  check (
-    (shop_id is not null and menu_item_id is null)
-    or (shop_id is null and menu_item_id is not null)
-  )
+-- Daily Code Sequence (tracks the last used pickup code per day)
+create table public.daily_code_sequence (
+  code_date date primary key,
+  last_code integer not null default 0
 );
 
-create index shops_slug_idx on public.shops(slug);
-create index shops_owner_id_idx on public.shops(owner_id);
-create index menu_items_shop_id_idx on public.menu_items(shop_id);
-create index menu_items_category_idx on public.menu_items(category);
-create index orders_user_id_created_at_idx on public.orders(user_id, created_at desc);
-create index orders_status_idx on public.orders(status);
-create index order_items_order_id_idx on public.order_items(order_id);
-create index order_items_shop_id_idx on public.order_items(shop_id);
-create index favorites_user_id_idx on public.favorites(user_id);
-create unique index favorites_user_shop_unique_idx
-on public.favorites(user_id, shop_id)
-where shop_id is not null;
-create unique index favorites_user_menu_item_unique_idx
-on public.favorites(user_id, menu_item_id)
-where menu_item_id is not null;
+-- Orders
+create table public.orders (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete set null,
+  shop_id uuid not null references public.shops(id) on delete cascade,
+  daily_code text not null, -- 4 digit code (e.g. 0005)
+  reference_number text not null unique, -- Long format (e.g. RS 1230 020526 0005)
+  status text not null default 'paid' check (status in ('paid', 'preparing', 'ready', 'completed', 'expired', 'customer_late')),
+  total_amount_lkr integer not null,
+  pickup_time timestamptz,
+  scheduled_slot text not null default 'ASAP',
+  note text,
+  customer_name text not null default 'Guest',
+  payment_confirmed boolean not null default true,
+  code_date date not null default current_date,
+  created_at timestamptz not null default now()
+);
 
-create or replace function public.set_updated_at()
-returns trigger
+-- Order Items
+create table public.order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders(id) on delete cascade,
+  menu_item_id uuid references public.menu_items(id) on delete set null,
+  shop_id uuid not null references public.shops(id) on delete cascade,
+  item_title text not null,
+  item_image_url text,
+  quantity integer not null default 1,
+  unit_price_lkr integer not null,
+  notes text,
+  dining text not null default 'takeaway' check (dining in ('dine-in', 'takeaway'))
+);
+
+-- Real-time Sync: User Cart
+create table public.user_cart (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  menu_item_id uuid not null references public.menu_items(id) on delete cascade,
+  shop_id uuid not null references public.shops(id) on delete cascade,
+  quantity integer not null default 1,
+  notes text,
+  dining text not null default 'takeaway' check (dining in ('dine-in', 'takeaway')),
+  scheduled_slot text not null default 'ASAP',
+  updated_at timestamptz not null default now()
+);
+
+-- Real-time Sync: User Favorites
+create table public.user_favorites (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  menu_item_id uuid not null references public.menu_items(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, menu_item_id)
+);
+
+-- Shop Registrations (applications)
+create table public.shop_registrations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  shop_name text not null,
+  slug text not null unique,
+  owner_name text not null,
+  email text not null,
+  payment_link text not null,
+  description text,
+  category text,
+  logo_url text,
+  banner_url text,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  created_at timestamptz not null default now()
+);
+
+-- 3. FUNCTIONS & RPCs
+
+-- Daily Code Generator
+create or replace function public.fn_next_daily_code(p_date date)
+returns integer
 language plpgsql
 as $$
+declare
+  v_next integer;
 begin
-  new.updated_at = now();
-  return new;
+  insert into public.daily_code_sequence (code_date, last_code)
+  values (p_date, 1)
+  on conflict (code_date) do update
+  set last_code = daily_code_sequence.last_code + 1
+  returning last_code into v_next;
+  
+  return v_next;
 end;
 $$;
 
-create trigger profiles_set_updated_at
-before update on public.profiles
-for each row execute function public.set_updated_at();
+-- Reference Number Generator
+create or replace function public.fn_generate_reference(
+  p_shop_id uuid,
+  p_date date,
+  p_code integer
+)
+returns text
+language plpgsql
+as $$
+declare
+  v_shop_code text;
+  v_time_part text;
+  v_date_part text;
+begin
+  select coalesce(letter_code, 'XX') into v_shop_code from public.shops where id = p_shop_id;
+  v_time_part := to_char(now(), 'HH24MI');
+  v_date_part := to_char(p_date, 'DDMMYY');
+  
+  return v_shop_code || ' ' || v_time_part || ' ' || v_date_part || ' ' || lpad(p_code::text, 4, '0');
+end;
+$$;
 
-create trigger shops_set_updated_at
-before update on public.shops
-for each row execute function public.set_updated_at();
+-- Atomic Order Creation (Handles code generation and cart cleanup)
+create or replace function public.fn_create_order(
+  p_user_id uuid,
+  p_shop_id uuid,
+  p_total integer,
+  p_slot text,
+  p_note text,
+  p_customer_name text,
+  p_items jsonb -- Array of {menu_item_id, title, qty, price, notes, dining, image_url}
+)
+returns text -- Returns the reference number
+language plpgsql
+security definer
+as $$
+declare
+  v_order_id uuid;
+  v_daily_int integer;
+  v_daily_str text;
+  v_ref text;
+  v_item jsonb;
+begin
+  -- 1. Get next code
+  v_daily_int := public.fn_next_daily_code(current_date);
+  v_daily_str := lpad(v_daily_int::text, 4, '0');
+  v_ref := public.fn_generate_reference(p_shop_id, current_date, v_daily_int);
 
-create trigger menu_items_set_updated_at
-before update on public.menu_items
-for each row execute function public.set_updated_at();
+  -- 2. Create Order
+  insert into public.orders (
+    user_id, shop_id, daily_code, reference_number, 
+    total_amount_lkr, scheduled_slot, note, customer_name
+  ) values (
+    p_user_id, p_shop_id, v_daily_str, v_ref,
+    p_total, p_slot, p_note, p_customer_name
+  ) returning id into v_order_id;
 
-create trigger orders_set_updated_at
-before update on public.orders
-for each row execute function public.set_updated_at();
+  -- 3. Add Items
+  for v_item in select * from jsonb_array_elements(p_items) loop
+    insert into public.order_items (
+      order_id, shop_id, menu_item_id, item_title,
+      item_image_url, quantity, unit_price_lkr, notes, dining
+    ) values (
+      v_order_id, p_shop_id, (v_item->>'menu_item_id')::uuid, v_item->>'title',
+      v_item->>'image_url', (v_item->>'qty')::integer, (v_item->>'price')::integer,
+      v_item->>'notes', coalesce(v_item->>'dining', 'takeaway')
+    );
+  end loop;
 
+  -- 4. Increment User Total Orders
+  update public.profiles 
+  set total_orders = total_orders + 1 
+  where id = p_user_id;
+
+  -- 5. Clear items for this shop from user's cart
+  delete from public.user_cart 
+  where user_id = p_user_id and shop_id = p_shop_id;
+
+  return v_ref;
+end;
+$$;
+
+-- Auth Hook for Profile Creation
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, full_name, avatar_url)
+  insert into public.profiles (id, email, display_name, avatar_url)
   values (
     new.id,
     new.email,
-    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'),
+    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
     new.raw_user_meta_data->>'avatar_url'
-  )
-  on conflict (id) do update
-    set email = excluded.email,
-        full_name = coalesce(public.profiles.full_name, excluded.full_name),
-        avatar_url = coalesce(public.profiles.avatar_url, excluded.avatar_url);
-
+  );
   return new;
 end;
 $$;
@@ -181,159 +266,58 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
 
+-- 4. RLS POLICIES
+
 alter table public.profiles enable row level security;
 alter table public.shops enable row level security;
 alter table public.menu_items enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
-alter table public.favorites enable row level security;
+alter table public.user_cart enable row level security;
+alter table public.user_favorites enable row level security;
+alter table public.shop_registrations enable row level security;
 
-create policy "Users can read their own profile"
-on public.profiles for select
-using (auth.uid() = id);
+-- Profiles: Users can read/update their own
+create policy "Users can read own profile" on public.profiles for select using (auth.uid() = id);
+create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
 
-create policy "Users can update their own profile"
-on public.profiles for update
-using (auth.uid() = id)
-with check (auth.uid() = id);
+-- Shops: Anyone can read approved, owners can manage
+create policy "Public can read approved shops" on public.shops for select using (is_approved = true or auth.uid() = owner_id);
+create policy "Owners can update their shops" on public.shops for update using (auth.uid() = owner_id);
 
-create policy "Anyone can read approved shops"
-on public.shops for select
-using (is_approved = true);
-
-create policy "Shop owners can read their shops"
-on public.shops for select
-using (auth.uid() = owner_id);
-
-create policy "Shop owners can update their shops"
-on public.shops for update
-using (auth.uid() = owner_id)
-with check (auth.uid() = owner_id);
-
-create policy "Authenticated users can apply with a shop"
-on public.shops for insert
-with check (auth.uid() = owner_id);
-
-create policy "Anyone can read available menu items from approved shops"
-on public.menu_items for select
-using (
-  is_available = true
-  and exists (
-    select 1 from public.shops
-    where shops.id = menu_items.shop_id
-      and shops.is_approved = true
-  )
+-- Menu Items: Anyone can read from approved shops
+create policy "Public can read menu items" on public.menu_items for select using (true);
+create policy "Owners can manage menu items" on public.menu_items for all using (
+  exists (select 1 from public.shops where id = menu_items.shop_id and owner_id = auth.uid())
 );
 
-create policy "Shop owners can manage their menu items"
-on public.menu_items for all
-using (
-  exists (
-    select 1 from public.shops
-    where shops.id = menu_items.shop_id
-      and shops.owner_id = auth.uid()
-  )
-)
-with check (
-  exists (
-    select 1 from public.shops
-    where shops.id = menu_items.shop_id
-      and shops.owner_id = auth.uid()
-  )
+-- Orders: Users can read own, vendors can read their shop's orders
+create policy "Users can read own orders" on public.orders for select using (auth.uid() = user_id);
+create policy "Vendors can read shop orders" on public.orders for select using (
+  exists (select 1 from public.shops where id = orders.shop_id and owner_id = auth.uid())
+);
+create policy "Vendors can update shop orders" on public.orders for update using (
+  exists (select 1 from public.shops where id = orders.shop_id and owner_id = auth.uid())
 );
 
-create policy "Customers can read their orders"
-on public.orders for select
-using (auth.uid() = user_id);
-
-create policy "Customers can create their orders"
-on public.orders for insert
-with check (auth.uid() = user_id);
-
-create policy "Vendors can read orders containing their shops"
-on public.orders for select
-using (
-  exists (
-    select 1
-    from public.order_items
-    join public.shops on shops.id = order_items.shop_id
-    where order_items.order_id = orders.id
-      and shops.owner_id = auth.uid()
-  )
+-- Order Items
+create policy "Users can read own order items" on public.order_items for select using (
+  exists (select 1 from public.orders where id = order_items.order_id and user_id = auth.uid())
+);
+create policy "Vendors can read shop order items" on public.order_items for select using (
+  exists (select 1 from public.shops where id = order_items.shop_id and owner_id = auth.uid())
 );
 
-create policy "Vendors can update orders containing their shops"
-on public.orders for update
-using (
-  exists (
-    select 1
-    from public.order_items
-    join public.shops on shops.id = order_items.shop_id
-    where order_items.order_id = orders.id
-      and shops.owner_id = auth.uid()
-  )
-);
+-- User Cart: Strictly owner only
+create policy "Users can manage own cart" on public.user_cart for all using (auth.uid() = user_id);
 
-create policy "Customers can read their order items"
-on public.order_items for select
-using (
-  exists (
-    select 1 from public.orders
-    where orders.id = order_items.order_id
-      and orders.user_id = auth.uid()
-  )
-);
+-- User Favorites: Strictly owner only
+create policy "Users can manage own favorites" on public.user_favorites for all using (auth.uid() = user_id);
 
-create policy "Customers can create items for their orders"
-on public.order_items for insert
-with check (
-  exists (
-    select 1 from public.orders
-    where orders.id = order_items.order_id
-      and orders.user_id = auth.uid()
-  )
-);
+-- Registrations: Owner can read, anyone can insert
+create policy "Public can apply for shop" on public.shop_registrations for insert with check (true);
+create policy "Applicants can read own registration" on public.shop_registrations for select using (auth.uid() = user_id);
 
-create policy "Vendors can read their order items"
-on public.order_items for select
-using (
-  exists (
-    select 1 from public.shops
-    where shops.id = order_items.shop_id
-      and shops.owner_id = auth.uid()
-  )
-);
-
-create policy "Users can manage their favorites"
-on public.favorites for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-
-insert into storage.buckets (id, name, public)
-values
-  ('shop-assets', 'shop-assets', true),
-  ('menu-images', 'menu-images', true)
-on conflict (id) do nothing;
-
-create policy "Anyone can read public shop assets"
-on storage.objects for select
-using (bucket_id in ('shop-assets', 'menu-images'));
-
-create policy "Authenticated users can upload shop assets"
-on storage.objects for insert
-with check (
-  bucket_id in ('shop-assets', 'menu-images')
-  and auth.role() = 'authenticated'
-);
-
-create policy "Asset owners can update their uploads"
-on storage.objects for update
-using (owner = auth.uid())
-with check (owner = auth.uid());
-
-create policy "Asset owners can delete their uploads"
-on storage.objects for delete
-using (owner = auth.uid());
-
+-- 5. REALTIME
 alter publication supabase_realtime add table public.orders;
 alter publication supabase_realtime add table public.order_items;

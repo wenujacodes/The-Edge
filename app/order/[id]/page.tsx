@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Check, ChefHat, Bell, ArrowRight, RotateCcw, AlertTriangle } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Check, ChefHat, Bell, ArrowRight, ArrowLeft, RotateCcw, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
 import { ReceiptCard } from "@/components/ui/ReceiptCard";
-import { useLiveOrder } from "@/lib/supabase/hooks";
+import { useLiveOrder, useUserOrders, useSupabaseUser } from "@/lib/supabase/hooks";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
-import type { PerShopOrder } from "@/lib/mockData";
 
 type Stage = 0 | 1 | 2;
 
@@ -21,74 +20,80 @@ const stages = [
 
 export default function OrderStatusPage() {
   const params = useParams();
-  const code = params?.id as string;
+  const router = useRouter();
+  const rawId = decodeURIComponent(params?.id as string);
+  const { data: user } = useSupabaseUser();
   const [stage, setStage] = useState<Stage>(0);
-  const [orders, setOrders] = useState<PerShopOrder[]>([]);
+  const [order, setOrder] = useState<any | null>(null);
+  const { data: allOrders = [] } = useUserOrders(user?.id);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [expired, setExpired] = useState(false);
   const { add } = useCart();
-  const { data: liveOrder } = useLiveOrder(code);
+  const { data: liveOrder, isLoading: isLiveLoading } = useLiveOrder(rawId);
 
+  // Swipe tracking
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Find the current order in the list
   useEffect(() => {
-    if (liveOrder) return;
-
-    // Load from localStorage — try last-orders first (multi-shop checkout)
-    const lastOrders = localStorage.getItem("edge-last-orders");
-    if (lastOrders) {
-      try {
-        const parsed: PerShopOrder[] = JSON.parse(lastOrders);
-        // Filter orders matching this code, or show all if navigating from checkout
-        const matching = parsed.filter((o) => o.orderCode === code);
-        if (matching.length > 0) {
-          setOrders(matching);
-        } else {
-          // If code doesn't match, show all from last checkout
-          setOrders(parsed);
-        }
-      } catch {}
+    if (!allOrders.length) return;
+    const idx = allOrders.findIndex((o) => o.referenceNumber === rawId);
+    if (idx >= 0) {
+      setCurrentIndex(idx);
     }
+  }, [rawId, allOrders]);
 
-    // Fallback: search in all orders
-    if (!lastOrders) {
-      const allOrders = localStorage.getItem("edge-orders");
-      if (allOrders) {
-        try {
-          const parsed: PerShopOrder[] = JSON.parse(allOrders);
-          const matching = parsed.filter((o) => o.orderCode === code);
-          if (matching.length > 0) {
-            setOrders(matching);
-          }
-        } catch {}
+  // Navigate to adjacent order
+  const navigateTo = useCallback((index: number) => {
+    if (index >= 0 && index < allOrders.length) {
+      const target = allOrders[index];
+      router.push(`/order/${encodeURIComponent(target.referenceNumber)}`);
+    }
+  }, [allOrders, router]);
+
+  // Swipe handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    const diff = touchStartX.current - touchEndX.current;
+    const threshold = 60;
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0 && currentIndex < allOrders.length - 1) {
+        // Swipe left → next (older) order
+        navigateTo(currentIndex + 1);
+      } else if (diff < 0 && currentIndex > 0) {
+        // Swipe right → previous (newer) order
+        navigateTo(currentIndex - 1);
       }
     }
+  }, [currentIndex, allOrders.length, navigateTo]);
 
-    const t1 = setTimeout(() => setStage(1), 2500);
-    const t2 = setTimeout(() => {
-      setStage(2);
-      toast.success("🎉 Your order is ready for pickup!", {
-        description: `Show code ${code} at the counter`,
-        duration: 8000,
-      });
-    }, 6000);
-
-    const t3 = setTimeout(() => {
-      setExpired(true);
-      toast.error("Order expired", {
-        description: "This order has been cancelled. Please place a new order.",
-      });
-    }, 90000);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+  // Keyboard arrow navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft" && currentIndex > 0) {
+        navigateTo(currentIndex - 1);
+      } else if (e.key === "ArrowRight" && currentIndex < allOrders.length - 1) {
+        navigateTo(currentIndex + 1);
+      }
     };
-  }, [code, liveOrder]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentIndex, allOrders.length, navigateTo]);
 
   useEffect(() => {
     if (!liveOrder) return;
 
     const statusStage: Record<string, Stage> = {
-      new: 0,
+      paid: 0,
       preparing: 1,
       ready: 2,
       completed: 2,
@@ -99,41 +104,42 @@ export default function OrderStatusPage() {
     setStage(statusStage[liveOrder.status] ?? 0);
     setExpired(liveOrder.status === "expired" || liveOrder.status === "customer_late");
 
-    const livePerShop: PerShopOrder = {
+    const livePerShop = {
       id: liveOrder.id,
-      orderCode: code,
-      referenceNumber: "",
-      shopId: liveOrder.items[0]?.shopId || "",
-      shopName: "Campus vendor",
-      shopEmoji: "🍽️",
-      customerName: "Guest",
+      orderCode: liveOrder.code,
+      referenceNumber: liveOrder.referenceNumber,
+      shopId: liveOrder.shopId || "",
+      shopName: liveOrder.shopName || "Campus vendor",
+      shopEmoji: liveOrder.shopEmoji || "🍽️",
+      shopBanner: liveOrder.shopBanner,
+      customerName: liveOrder.customerName || "Guest",
       items: liveOrder.items.map((item: any) => ({
-        item: {
-          id: item.id,
-          shopId: item.shopId,
-          title: item.title,
-          description: "",
-          image: "/icons/icon-512.png",
-          price: item.unitPrice,
-          category: "",
-          dietaryTags: [],
-          estimatedPrepTime: "",
-          isAvailable: true,
-        },
+        id: item.id,
+        title: item.title,
+        price: item.unitPrice,
+        image: item.imageUrl || "/icons/icon-512.png",
         qty: item.quantity,
         notes: item.notes,
         dining: item.dining,
       })),
       total: liveOrder.total,
-      orderTime: "",
+      orderTime: liveOrder.pickupTime || "",
       status: liveOrder.status,
-      placedAt: new Date().toISOString(),
-      slot: "ASAP",
+      placedAt: liveOrder.createdAt,
+      slot: liveOrder.scheduledSlot,
     };
-    setOrders([livePerShop]);
-  }, [liveOrder, code]);
+    setOrder(livePerShop);
+  }, [liveOrder]);
 
-  if (orders.length === 0) {
+  if (isLiveLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading order details...</div>
+      </div>
+    );
+  }
+
+  if (!order) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-20 md:pt-36 text-center">
@@ -149,18 +155,35 @@ export default function OrderStatusPage() {
   }
 
   const handleReorder = () => {
-    // TODO: Replace with Supabase query to fetch original order items
-    orders.forEach((order) => {
-      order.items.forEach((c) => {
-        add(c.item, c.qty, { notes: c.notes, dining: c.dining as "dine-in" | "takeaway" });
-      });
+    order.items.forEach((c: any) => {
+      add({
+        id: c.id,
+        shopId: order.shopId,
+        title: c.title,
+        price: c.price,
+        description: "",
+        image: c.image,
+        category: "",
+        dietaryTags: [],
+        estimatedPrepTime: "",
+        isAvailable: true
+      }, c.qty, { notes: c.notes, dining: c.dining as "dine-in" | "takeaway" });
     });
     toast.success("Items added to cart!");
   };
 
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < allOrders.length - 1;
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 md:pt-28 max-w-2xl">
+      <div
+        ref={containerRef}
+        className="container mx-auto px-4 py-8 md:pt-28 max-w-2xl"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
 
         {/* Expired warning */}
         {expired && (
@@ -173,11 +196,32 @@ export default function OrderStatusPage() {
           </div>
         )}
 
-        {/* Per-shop receipts — shown at the top */}
-        <div className="space-y-4 mb-8">
-          {orders.map((order) => (
-            <ReceiptCard key={order.id} order={order} />
-          ))}
+        {/* Swipe navigation indicator */}
+        {allOrders.length > 1 && (
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => hasPrev && navigateTo(currentIndex - 1)}
+              disabled={!hasPrev}
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-smooth focus-dashed disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" /> Newer
+            </button>
+            <span className="text-xs text-muted-foreground font-mono">
+              {currentIndex + 1} / {allOrders.length}
+            </span>
+            <button
+              onClick={() => hasNext && navigateTo(currentIndex + 1)}
+              disabled={!hasNext}
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-smooth focus-dashed disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Older <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Receipt */}
+        <div className="mb-8">
+          <ReceiptCard order={order} />
         </div>
 
         {/* Progress timeline */}

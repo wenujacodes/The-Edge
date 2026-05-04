@@ -6,9 +6,18 @@ import { Search, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { Footer } from "@/components/layout/Footer";
 import { FoodCard } from "@/components/shop/FoodCard";
-import { mockCategories } from "@/lib/mockData";
-import { dietaryFilters } from "@/lib/designSystem";
 import { useMenuItems, useShops } from "@/lib/supabase/hooks";
+
+const CATEGORIES = [
+  { id: "all", label: "All", emoji: "🍱" },
+  { id: "rice", label: "Rice", emoji: "🍚" },
+  { id: "noodles", label: "Noodles", emoji: "🍜" },
+  { id: "burgers", label: "Burgers", emoji: "🍔" },
+  { id: "drinks", label: "Drinks", emoji: "🥤" },
+  { id: "desserts", label: "Desserts", emoji: "🍰" },
+];
+
+const DIETARY = ["Halal", "Vegetarian", "Vegan", "Gluten-Free"];
 
 export default function BrowsePage() {
   return (
@@ -164,7 +173,7 @@ function BrowseContent() {
                   <ChevronDown className={`w-4 h-4 md:hidden transition-transform ${catOpen ? "rotate-180" : ""}`} />
                 </button>
                 <div className={`flex-col gap-1 ${catOpen ? "flex" : "hidden md:flex"}`}>
-                  {mockCategories.map((c) => (
+                  {CATEGORIES.map((c) => (
                     <button
                       key={c.id}
                       id={`browse-cat-${c.id}`}
@@ -192,7 +201,7 @@ function BrowseContent() {
                   <ChevronDown className={`w-4 h-4 md:hidden transition-transform ${tagsOpen ? "rotate-180" : ""}`} />
                 </button>
                 <div className={`flex-wrap gap-2 ${tagsOpen ? "flex" : "hidden md:flex"}`}>
-                  {dietaryFilters.map((d) => (
+                  {DIETARY.map((d) => (
                     <button
                       key={d}
                       id={`browse-diet-${d.toLowerCase()}`}
