@@ -1,34 +1,141 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Mail, ArrowRight, User, Sparkles, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+
+type AuthErrorLike = {
+  message?: string;
+  status?: number;
+  name?: string;
+};
 
 export default function AuthPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
   const router = useRouter();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase) return;
+      const { data: { user: session } } = await supabase.auth.getUser();
+      if (session) {
+        router.replace("/browse");
+      }
+    };
+    checkSession();
+  }, [router]);
 
   const toggleMode = () => {
     setMode(prev => (prev === "login" ? "signup" : "login"));
   };
 
-  const handleAuth = (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Frontend-only simulation for now
-    localStorage.setItem("edge-onboarded", "true");
-    localStorage.setItem("edge-user-name", name || "User");
-    localStorage.setItem("edge-user-email", email || "user@example.com");
-    
-    // Set cookie for server-side proxy
-    document.cookie = "edge-onboarded=true; path=/; max-age=31536000";
-    
-    router.push("/");
+    if (!email) return;
+
+    setLoading(true);
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: mode === "signup" ? { full_name: name } : undefined,
+        },
+      });
+
+      if (error) {
+        console.error("Auth error details:", {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
+        throw error;
+      }
+
+      setSent(true);
+    } catch (error: unknown) {
+      const authError = error as AuthErrorLike;
+      console.error("Caught auth error:", error);
+      
+      if (authError.status === 429 || authError.message?.includes("rate limit")) {
+        // Offer bypass in dev mode
+        const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        if (isDev) {
+          const proceed = confirm("Email rate limit exceeded. Since you are in local development, would you like to bypass the email and log in instantly?");
+          if (proceed) {
+            handleBypass();
+          }
+        } else {
+          alert("Email rate limit exceeded. Since we are in the testing phase, you may need to increase the 'Email Rate Limit' in your Supabase Dashboard (Authentication -> Settings -> Email Auth).");
+        }
+      } else if (authError.message === "Failed to fetch") {
+        alert("Network error: Failed to reach Supabase. Please check your internet connection or if the Supabase project is active.");
+      } else {
+        alert(authError.message || "Failed to send magic link");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleBypass = async () => {
+    if (!email) return;
+    setLoading(true);
+    try {
+      const { devAuthBypass } = await import("./actions");
+      const result = await devAuthBypass(email);
+      if (result.error) throw new Error(result.error);
+      if (result.actionLink) {
+        window.location.href = result.actionLink;
+      }
+    } catch (error: unknown) {
+      const authError = error as AuthErrorLike;
+      alert("Bypass failed: " + (authError.message || "Unknown error"));
+      setLoading(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md space-y-8"
+        >
+          <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8">
+            <Mail className="w-10 h-10 text-primary animate-pulse" />
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight">Check your email</h1>
+          <p className="text-muted-foreground text-lg leading-relaxed">
+            We&apos;ve sent a magic link to <span className="text-foreground font-bold">{email}</span>.{" "}
+            Click the link in the email to sign in instantly.
+          </p>
+          <div className="pt-4">
+            <button 
+              onClick={() => setSent(false)}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Didn&apos;t get the email? Try again
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row overflow-hidden selection:bg-primary selection:text-primary-foreground">
@@ -115,11 +222,21 @@ export default function AuthPage() {
 
                 <button 
                   onClick={handleAuth}
-                  className="w-full h-14 mt-4 bg-foreground text-background font-bold rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] transform group shadow-xl shadow-foreground/5 overflow-hidden relative"
+                  disabled={loading}
+                  className="w-full h-14 mt-4 bg-foreground text-background font-bold rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] transform group shadow-xl shadow-foreground/5 overflow-hidden relative disabled:opacity-50"
                 >
                   <span className="relative z-10 flex items-center gap-2">
-                    {mode === "login" ? "Send magic link" : "Create account"}
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                        Sending...
+                      </span>
+                    ) : (
+                      <>
+                        {mode === "login" ? "Send magic link" : "Create account"}
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
                   </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                 </button>
@@ -141,7 +258,7 @@ export default function AuthPage() {
               <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/30 dark:bg-white/5 text-[11px] text-muted-foreground leading-snug">
                 <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
                 <p>
-                  By continuing, you agree to THE EDGE's{" "}
+                  By continuing, you agree to THE EDGE&apos;s{" "}
                   <Link href="/terms" className="underline hover:text-foreground font-medium">Terms</Link> and{" "}
                   <Link href="/privacy" className="underline hover:text-foreground font-medium">Privacy Policy</Link>.
                 </p>

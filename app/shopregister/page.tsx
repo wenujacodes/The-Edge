@@ -5,6 +5,8 @@ import { ArrowLeft, Store, CheckCircle2, Upload } from "lucide-react";
 import Link from "next/link";
 import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
+import { submitShopRegistration } from "@/lib/supabase/data";
+import { useSupabaseUser } from "@/lib/supabase/hooks";
 
 const shopCategories = ["Rice & Meals", "Snacks", "Beverages", "Desserts", "Coffee", "Juice", "Bakery", "Other"];
 
@@ -21,6 +23,9 @@ export default function ShopRegisterPage() {
     agreeTerms: false,
   });
 
+  const [loading, setLoading] = useState(false);
+  const { data: user } = useSupabaseUser();
+
   const handleChange = (field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (field === "shopName" && typeof value === "string") {
@@ -32,15 +37,32 @@ export default function ShopRegisterPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.agreeTerms) {
       toast.error("Please agree to the terms to proceed.");
       return;
     }
-    // TODO: Replace with Supabase mutation — INSERT INTO shop_registrations (status: 'pending')
-    setSubmitted(true);
-    toast.success("Registration submitted! Pending review.");
+    
+    setLoading(true);
+    try {
+      await submitShopRegistration({
+        userId: user?.id,
+        shopName: form.shopName,
+        slug: form.slug,
+        ownerName: form.ownerName,
+        email: form.email,
+        paymentLink: form.paymentLink,
+        description: form.description,
+        category: form.category,
+      });
+      setSubmitted(true);
+      toast.success("Registration submitted! Pending review.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to submit registration");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -233,9 +255,15 @@ export default function ShopRegisterPage() {
           <button
             id="submit-registration"
             type="submit"
-            className="w-full pill bg-foreground text-background py-4 font-semibold hover:bg-foreground/90 transition-smooth focus-dashed shadow-pop"
+            disabled={loading}
+            className="w-full pill bg-foreground text-background py-4 font-semibold hover:bg-foreground/90 transition-smooth focus-dashed shadow-pop flex items-center justify-center gap-2"
           >
-            Submit for review
+            {loading ? (
+              <>
+                <span className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                Submitting...
+              </>
+            ) : "Submit for review"}
           </button>
         </form>
       </div>

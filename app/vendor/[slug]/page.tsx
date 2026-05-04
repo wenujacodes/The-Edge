@@ -1,144 +1,143 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useParams } from "next/navigation";
 import {
   ListOrdered, Utensils, BarChart3, Settings,
   Check, ChefHat, Bell, TrendingUp, DollarSign,
   Plus, Pencil, Power, Users,
   ArrowLeft, ToggleLeft, ToggleRight, Upload,
+  Search, X, RotateCcw, Printer, ChevronRight,
+  Clock, MapPin, Hash, User
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from "recharts";
-import { shopBySlug, itemsByShop, mockOrders, mockAnalytics } from "@/lib/mockData";
 import { toast } from "sonner";
-import { useUpdateOrderStatus, useVendorOrders } from "@/lib/supabase/hooks";
-import { uploadPublicImage } from "@/lib/supabase/storage";
+import { 
+  useUpdateOrderStatus, 
+  useVendorOrders, 
+  useVendorSearch,
+  useShop,
+  useShopMenuItems
+} from "@/lib/supabase/hooks";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { motion, AnimatePresence } from "framer-motion";
+import type { OrderStatus } from "@/lib/mockData";
+import type { VendorOrder } from "@/lib/supabase/data";
 
 type Tab = "orders" | "menu" | "analytics" | "settings";
-type OrderStatus = "new" | "preparing" | "ready" | "completed";
-
-const COLORS = ["hsl(211 100% 59%)", "hsl(134 81% 65%)", "hsl(38 100% 60%)", "hsl(190 95% 60%)"];
 
 export default function VendorDashboard() {
   const params = useParams();
   const slug = params?.slug as string;
-  const shop = shopBySlug(slug ?? "");
-  const menuItems = shop ? itemsByShop(shop.id) : [];
+  const { data: shop } = useShop(slug);
+  const { data: menuItems = [] } = useShopMenuItems(shop?.id);
+  
   const [tab, setTab] = useState<Tab>("orders");
-  const [orders, setOrders] = useState(mockOrders);
-  const [shopOpen, setShopOpen] = useState(shop?.isOpen ?? true);
-  const [revenueFilter, setRevenueFilter] = useState<"today" | "week" | "month">("today");
-  const { data: liveOrders = [] } = useVendorOrders(shop?.id);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState<"today" | "week" | "month">("today");
+  const [selectedOrder, setSelectedOrder] = useState<VendorOrder | null>(null);
+  const [undoOrder, setUndoOrder] = useState<{ id: string, prevStatus: OrderStatus } | null>(null);
+
+  // Live orders query
+  const { data: liveOrders = [], isLoading: ordersLoading } = useVendorOrders(shop?.id, dateFilter);
+  
+  // Search query (only active if debouncedQuery has value)
+  const { data: searchResults = [] } = useVendorSearch(shop?.id, debouncedQuery, dateFilter);
+
   const updateOrderStatusMutation = useUpdateOrderStatus();
 
+  // Debounce search query
   useEffect(() => {
-    if (liveOrders.length > 0) setOrders(liveOrders);
-  }, [liveOrders]);
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const ordersToDisplay = debouncedQuery ? searchResults : liveOrders;
+
+  const handleUpdateStatus = async (orderId: string, status: OrderStatus, prevStatus?: OrderStatus) => {
+    try {
+      await updateOrderStatusMutation.mutateAsync({ orderId, status });
+      
+      if (status === "ready" && prevStatus) {
+        setUndoOrder({ id: orderId, prevStatus });
+        toast.success("Order marked as ready", {
+          action: {
+            label: "Undo",
+            onClick: () => handleUndo(orderId, prevStatus)
+          },
+          duration: 5000
+        });
+        // Clear undo after 5s
+        setTimeout(() => setUndoOrder(null), 5000);
+      } else {
+        toast.success(`Order marked as ${status}`);
+      }
+    } catch (e) {
+      toast.error("Failed to update status");
+    }
+  };
+
+  const handleUndo = async (orderId: string, prevStatus: OrderStatus) => {
+    try {
+      await updateOrderStatusMutation.mutateAsync({ orderId, status: prevStatus });
+      setUndoOrder(null);
+      toast.success("Action undone");
+    } catch (e) {
+      toast.error("Failed to undo");
+    }
+  };
 
   if (!shop) {
     return (
       <div className="min-h-screen grid place-items-center bg-background">
-        <div className="text-center">
-          <div className="text-5xl mb-4">🔍</div>
-          <h1 className="text-2xl font-bold">Vendor not found</h1>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-muted-foreground animate-pulse">Loading vendor portal...</p>
         </div>
       </div>
     );
   }
 
-  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
-    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
-    updateOrderStatusMutation.mutate({ orderId, status });
-    toast.success(`Order ${orderId.split("-")[1]} marked as ${status}`);
-  };
-
-  const updateShopAsset = async (file: File, field: "logo_url" | "banner_url") => {
-    const supabase = getSupabaseBrowserClient();
-    const url = await uploadPublicImage({
-      bucket: "shop-assets",
-      file,
-      path: `${shop.id}/${field}-${Date.now()}-${file.name}`,
-    });
-
-    if (supabase) {
-      const { error } = await supabase.from("shops").update({ [field]: url }).eq("id", shop.id);
-      if (error) throw error;
-    }
-
-    toast.success(field === "logo_url" ? "Shop logo uploaded" : "Shop banner uploaded");
-  };
-
-  const updateMenuItemImage = async (itemId: string, file: File) => {
-    const supabase = getSupabaseBrowserClient();
-    const url = await uploadPublicImage({
-      bucket: "menu-images",
-      file,
-      path: `${shop.id}/${itemId}-${Date.now()}-${file.name}`,
-    });
-
-    if (supabase) {
-      const { error } = await supabase.from("menu_items").update({ image_url: url }).eq("id", itemId);
-      if (error) throw error;
-    }
-
-    toast.success("Menu item image uploaded");
-  };
-
-  const kanbanCols = [
-    { key: "new" as const, label: "New", icon: Check, accent: "warning" },
-    { key: "preparing" as const, label: "Preparing", icon: ChefHat, accent: "primary" },
-    { key: "ready" as const, label: "Ready", icon: Bell, accent: "success" },
-  ];
-
-  const revenue =
-    revenueFilter === "today"
-      ? mockAnalytics.todayRevenue
-      : revenueFilter === "week"
-      ? mockAnalytics.weekRevenue
-      : mockAnalytics.monthRevenue;
-
-  const navItems = [
-    { id: "orders" as Tab, label: "Live Orders", icon: ListOrdered },
-    { id: "menu" as Tab, label: "Menu", icon: Utensils },
-    { id: "analytics" as Tab, label: "Analytics", icon: BarChart3 },
-    { id: "settings" as Tab, label: "Settings", icon: Settings },
-  ];
-
   return (
-    <div className="min-h-screen bg-secondary/30 flex">
-      {/* ── SIDEBAR ── */}
-      <aside className="hidden md:flex w-60 flex-col border-r border-border bg-background sticky top-0 h-screen z-30">
-        <div className="p-6 border-b border-border">
-          <Link href="/" className="flex items-center gap-2">
+    <div className="min-h-screen bg-secondary/20 flex overflow-hidden">
+      {/* ── SIDEBAR (Desktop) ── */}
+      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-background h-screen z-30">
+        <div className="p-6 border-b border-border bg-card/50">
+          <Link href="/" className="flex items-center gap-2 mb-8">
             <div className="w-8 h-8 rounded-xl hero-gradient grid place-items-center text-white font-bold text-sm">E</div>
             <span className="font-bold tracking-tight">THE EDGE</span>
           </Link>
-          <div className="mt-6 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-secondary grid place-items-center text-xl">{shop.emoji}</div>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-secondary grid place-items-center text-2xl shadow-inner">{shop.emoji}</div>
             <div className="min-w-0">
-              <div className="font-semibold truncate">{shop.name}</div>
-              <div className={`text-[11px] flex items-center gap-1 ${shopOpen ? "text-success-foreground" : "text-muted-foreground"}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${shopOpen ? "bg-success" : "bg-muted-foreground"}`} />
-                {shopOpen ? "Live" : "Offline"}
+              <div className="font-bold truncate text-sm">{shop.name}</div>
+              <div className={`text-[10px] flex items-center gap-1.5 font-bold uppercase tracking-wider ${shop.isOpen ? "text-success" : "text-muted-foreground"}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${shop.isOpen ? "bg-success animate-pulse" : "bg-muted-foreground"}`} />
+                {shop.isOpen ? "Live" : "Offline"}
               </div>
             </div>
           </div>
         </div>
-        <nav className="flex-1 p-3 space-y-1" aria-label="Vendor navigation">
-          {navItems.map((t) => (
+        <nav className="flex-1 p-4 space-y-2 mt-4">
+          {[
+            { id: "orders", label: "Live Orders", icon: ListOrdered },
+            { id: "menu", label: "Menu Items", icon: Utensils },
+            { id: "analytics", label: "Insights", icon: BarChart3 },
+            { id: "settings", label: "Store Settings", icon: Settings },
+          ].map((t) => (
             <button
               key={t.id}
-              id={`vendor-nav-${t.id}`}
-              onClick={() => setTab(t.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-smooth focus-dashed ${
+              onClick={() => setTab(t.id as Tab)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
                 tab === t.id
-                  ? "bg-foreground text-background"
+                  ? "bg-foreground text-background shadow-lg shadow-foreground/10 scale-[1.02]"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               }`}
             >
@@ -146,496 +145,401 @@ export default function VendorDashboard() {
             </button>
           ))}
         </nav>
-        <div className="p-4 border-t border-border">
+        <div className="p-6 border-t border-border">
+          <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors">
+            <Power className="w-3 h-3" /> Sign out
+          </button>
         </div>
       </aside>
 
-      {/* ── MAIN ── */}
-      <main className="flex-1 min-w-0 flex flex-col">
-        {/* Top bar */}
-        <header className="border-b border-border bg-background sticky top-0 z-10">
-          <div className="px-6 lg:px-10 py-5 flex items-center justify-between">
-            <div>
-              <div className="label-mono mb-1">● Vendor dashboard</div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                {tab === "orders" ? "Live orders" : tab === "menu" ? "Menu management" : tab === "analytics" ? "Analytics" : "Settings"}
-              </h1>
+      {/* ── MAIN CONTENT ── */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        
+        {/* Mobile Header / Tab Bar */}
+        <header className="lg:hidden bg-background border-b border-border p-4 sticky top-0 z-20">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+               <div className="text-xl">{shop.emoji}</div>
+               <span className="font-bold text-sm truncate">{shop.name}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                id="shop-status-toggle"
-                onClick={() => {
-                  setShopOpen(!shopOpen);
-                  toast.success(shopOpen ? "Shop closed" : "Shop opened");
-                }}
-                className={`pill px-4 py-2 text-sm font-medium focus-dashed transition-smooth flex items-center gap-2 ${
-                  shopOpen ? "bg-success-soft text-success-foreground" : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {shopOpen ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-                {shopOpen ? "● Accepting orders" : "● Shop closed"}
-              </button>
+            <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${shop.isOpen ? "bg-success/10 text-success border border-success/20" : "bg-muted text-muted-foreground"}`}>
+              {shop.isOpen ? "Accepting Orders" : "Closed"}
             </div>
           </div>
-          {/* Mobile tab bar */}
-          <div className="md:hidden flex gap-1 px-4 pb-3 overflow-x-auto scrollbar-hide">
-            {navItems.map((t) => (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {["orders", "menu", "analytics", "settings"].map((t) => (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`pill px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-smooth ${
-                  tab === t.id ? "bg-foreground text-background" : "bg-secondary text-muted-foreground"
+                key={t}
+                onClick={() => setTab(t as Tab)}
+                className={`px-4 py-2 rounded-full text-[11px] font-bold whitespace-nowrap border capitalize transition-all ${
+                  tab === t 
+                    ? "bg-foreground text-background border-foreground shadow-sm" 
+                    : "bg-secondary/50 text-muted-foreground border-transparent"
                 }`}
               >
-                {t.label}
+                {t}
               </button>
             ))}
           </div>
         </header>
 
-        <div className="p-6 lg:p-10 flex-1">
+        {/* Global Toolbar */}
+        <div className="bg-background/80 backdrop-blur-md border-b border-border px-6 py-4 flex items-center justify-between z-10 sticky top-0 hidden lg:flex">
+          <div className="flex items-center gap-6">
+            <h1 className="text-xl font-bold capitalize">{tab === "orders" ? "Orders Feed" : tab}</h1>
+            {tab === "orders" && (
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Code, Ref, or Name..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 rounded-full bg-secondary/50 border-none h-10 text-sm focus-visible:ring-1 focus-visible:ring-primary"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <X className="w-3 h-3 text-muted-foreground" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 bg-secondary/50 rounded-full p-1 border border-border">
+              {["today", "week", "month"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setDateFilter(f as any)}
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    dateFilter === f ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+            <div className="w-px h-6 bg-border mx-2" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Store Status</span>
+              <button 
+                onClick={() => toast.info("Use settings to change store status")}
+                className={`w-10 h-6 rounded-full relative transition-colors ${shop.isOpen ? "bg-success" : "bg-muted"}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${shop.isOpen ? "left-5" : "left-1"}`} />
+              </button>
+            </div>
+          </div>
+        </div>
 
+        <div className="flex-1 overflow-y-auto p-6 lg:p-10">
+          
           {/* ── ORDERS TAB ── */}
           {tab === "orders" && (
-            <>
-              {/* Stats */}
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <StatCard label="Today's revenue" value={`Rs ${mockAnalytics.todayRevenue.toLocaleString()}`} delta="+18% vs yesterday" icon={DollarSign} accent="primary" />
-                <StatCard label="Orders today" value={String(mockAnalytics.todayOrders)} delta={`+6 this hour`} icon={ListOrdered} accent="foreground" />
-                <StatCard label="Peak hour" value={mockAnalytics.peakHour} delta={`${mockAnalytics.peakOrderCount} orders`} icon={TrendingUp} accent="success" />
-                <StatCard label="Active now" value={String(orders.filter(o => o.status !== "completed").length)} delta="orders pending" icon={Users} accent="warning" />
-              </div>
-
-              {/* Kanban */}
-              <div className="grid lg:grid-cols-3 gap-5">
-                {kanbanCols.map((col) => {
-                  const list = orders.filter((o) => o.status === col.key);
-                  return (
-                    <div key={col.key} className="rounded-3xl bg-background border border-border p-5">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <col.icon className="w-4 h-4" />
-                          <h3 className="font-semibold tracking-tight">{col.label}</h3>
-                        </div>
-                        <span className={`w-6 h-6 rounded-full grid place-items-center text-xs font-semibold ${
-                          col.accent === "warning" ? "bg-warning/15 text-warning-foreground"
-                            : col.accent === "primary" ? "bg-primary/10 text-primary"
-                            : "bg-success-soft text-success-foreground"
-                        }`}>
-                          {list.length}
-                        </span>
+            <div className="flex flex-col lg:flex-row gap-8 h-full">
+              {/* Order Lists */}
+              <div className="flex-1 space-y-8">
+                <div className="grid md:grid-cols-2 gap-6 h-full content-start">
+                  
+                  {/* COLUMN: PREPARING */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                      <div className="flex items-center gap-2">
+                        <ChefHat className="w-4 h-4 text-primary" />
+                        <h2 className="font-bold text-sm uppercase tracking-widest">New / Preparing</h2>
                       </div>
-                      <div className="space-y-3">
-                        {list.map((o) => (
-                          <div key={o.id} className="rounded-2xl border border-border p-4 hover:shadow-soft transition-smooth bg-card">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-mono font-bold tracking-widest text-sm">{o.code}</span>
-                              <span className="text-[11px] text-muted-foreground">{o.time}</span>
-                            </div>
-                            <ul className="text-sm space-y-1 mb-2">
-                              {o.items.map((it, idx) => <li key={idx}>{it}</li>)}
-                            </ul>
-                            {o.note && (
-                              <div className="text-[11px] bg-warning/10 text-warning-foreground rounded-lg px-2 py-1 mb-2">
-                                📝 {o.note}
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between mt-3">
-                              <span className="font-mono text-sm font-semibold">Rs {o.total}</span>
-                              <div className="flex gap-1.5">
-                                {col.key === "new" && (
-                                  <button
-                                    onClick={() => updateOrderStatus(o.id, "preparing")}
-                                    className="pill bg-primary text-primary-foreground text-xs font-medium px-3 py-1.5 focus-dashed hover:bg-primary-glow transition-smooth"
-                                  >
-                                    Start preparing
-                                  </button>
-                                )}
-                                {col.key === "preparing" && (
-                                  <button
-                                    onClick={() => updateOrderStatus(o.id, "ready")}
-                                    className="pill bg-foreground text-background text-xs font-medium px-3 py-1.5 focus-dashed hover:bg-foreground/90 transition-smooth"
-                                  >
-                                    Mark ready
-                                  </button>
-                                )}
-                                {col.key === "ready" && (
-                                  <button
-                                    onClick={() => updateOrderStatus(o.id, "completed")}
-                                    className="pill bg-success text-success-foreground text-xs font-medium px-3 py-1.5 focus-dashed hover:opacity-90 transition-smooth"
-                                  >
-                                    Complete ✓
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {list.length === 0 && (
-                          <div className="text-center py-10 text-xs text-muted-foreground">
-                            No orders here
-                          </div>
-                        )}
-                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+                        {ordersToDisplay.filter(o => o.status === "paid" || o.status === "preparing").length}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* ── MENU TAB ── */}
-          {tab === "menu" && (
-            <>
-              <div className="flex items-center justify-between mb-6">
-                <p className="text-sm text-muted-foreground">{menuItems.length} items on your menu</p>
-                <button
-                  id="add-menu-item-btn"
-                  className="inline-flex items-center gap-2 pill bg-foreground text-background px-4 py-2.5 text-sm font-medium hover:bg-foreground/90 transition-smooth focus-dashed"
-                >
-                  <Plus className="w-4 h-4" /> Add item
-                  {/* TODO: Open modal with form — POST to Supabase menu_items table */}
-                </button>
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {menuItems.map((i) => (
-                  <div key={i.id} className="rounded-3xl border border-border bg-background overflow-hidden">
-                    <div className="relative w-full aspect-[4/3]">
-                      <Image src={i.image} alt={i.title} fill className="object-cover" />
-                      {!i.isAvailable && (
-                        <div className="absolute inset-0 bg-background/60 grid place-items-center">
-                          <span className="pill bg-muted text-muted-foreground text-xs px-3 py-1.5">Unavailable</span>
-                        </div>
+                    
+                    <div className="space-y-4">
+                      {ordersToDisplay.filter(o => o.status === "paid" || o.status === "preparing").map((o) => (
+                        <OrderCard 
+                          key={o.id} 
+                          order={o} 
+                          onClick={() => setSelectedOrder(o)}
+                          onStatusChange={handleUpdateStatus}
+                          isActive={selectedOrder?.id === o.id}
+                        />
+                      ))}
+                      {ordersToDisplay.filter(o => o.status === "paid" || o.status === "preparing").length === 0 && (
+                        <EmptyState message="All caught up!" icon={Check} />
                       )}
                     </div>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-semibold">{i.title}</h3>
-                        <span className="font-mono font-semibold shrink-0">Rs {i.price}</span>
+                  </div>
+
+                  {/* COLUMN: READY */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-success" />
+                        <h2 className="font-bold text-sm uppercase tracking-widest">Ready for Pickup</h2>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{i.description}</p>
-                      <div className="mt-3 flex gap-2 flex-wrap">
-                        <button className="pill bg-secondary text-xs font-medium px-3 py-1.5 hover:bg-accent focus-dashed transition-smooth flex items-center gap-1">
-                          <Pencil className="w-3 h-3" /> Edit
-                          {/* TODO: Open edit modal — UPDATE menu_items in Supabase */}
-                        </button>
-                        <button className="pill border border-border text-xs font-medium px-3 py-1.5 hover:bg-secondary focus-dashed transition-smooth flex items-center gap-1">
-                          <Power className="w-3 h-3" />
-                          {i.isAvailable ? "Set unavailable" : "Set available"}
-                          {/* TODO: PATCH isAvailable in Supabase */}
-                        </button>
-                        <label className="pill border border-border text-xs font-medium px-3 py-1.5 hover:bg-secondary focus-dashed transition-smooth flex items-center gap-1 cursor-pointer">
-                          <Upload className="w-3 h-3" /> Image
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="sr-only"
-                            onChange={async (event) => {
-                              const file = event.target.files?.[0];
-                              if (!file) return;
-                              try {
-                                await updateMenuItemImage(i.id, file);
-                              } catch (error) {
-                                toast.error(error instanceof Error ? error.message : "Image upload failed");
-                              } finally {
-                                event.target.value = "";
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-[10px] font-bold">
+                        {ordersToDisplay.filter(o => o.status === "ready").length}
+                      </span>
+                    </div>
+
+                    <div className="space-y-4">
+                      {ordersToDisplay.filter(o => o.status === "ready").map((o) => (
+                        <OrderCard 
+                          key={o.id} 
+                          order={o} 
+                          onClick={() => setSelectedOrder(o)}
+                          onStatusChange={handleUpdateStatus}
+                          isActive={selectedOrder?.id === o.id}
+                        />
+                      ))}
+                      {ordersToDisplay.filter(o => o.status === "ready").length === 0 && (
+                        <EmptyState message="Nothing ready yet" icon={Clock} />
+                      )}
                     </div>
                   </div>
-                ))}
-                <button
-                  className="rounded-3xl border-2 border-dashed border-border p-10 grid place-items-center text-muted-foreground hover:border-primary hover:text-primary transition-smooth focus-dashed min-h-[200px]"
-                >
-                  <Plus className="w-8 h-8 mb-2" />
-                  <span className="text-sm font-medium">Add new item</span>
-                </button>
+                </div>
               </div>
-            </>
-          )}
 
-          {/* ── ANALYTICS TAB ── */}
-          {tab === "analytics" && (
-            <>
-              {/* Revenue filter */}
-              <div className="inline-flex rounded-full bg-secondary p-1 text-sm font-medium mb-6">
-                {(["today", "week", "month"] as const).map((f) => (
-                  <button
-                    key={f}
-                    id={`revenue-filter-${f}`}
-                    onClick={() => setRevenueFilter(f)}
-                    className={`pill px-4 py-2 capitalize transition-smooth ${
-                      revenueFilter === f ? "bg-background shadow-soft" : "text-muted-foreground"
-                    }`}
+              {/* Receipt Preview Pane (Desktop) */}
+              <AnimatePresence>
+                {selectedOrder && (
+                  <motion.div 
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: 20, opacity: 0 }}
+                    className="hidden lg:block w-[400px] bg-background border border-border rounded-[2.5rem] p-6 shadow-2xl sticky top-0 h-fit"
                   >
-                    {f === "today" ? "Today" : f === "week" ? "This week" : "This month"}
-                  </button>
-                ))}
-              </div>
-
-              <div className="grid sm:grid-cols-3 gap-4 mb-8">
-                <StatCard label="Revenue" value={`Rs ${revenue.toLocaleString()}`} delta={revenueFilter} icon={DollarSign} accent="primary" />
-                <StatCard label="Orders" value={String(mockAnalytics.todayOrders)} delta="today" icon={ListOrdered} accent="foreground" />
-                <StatCard label="Peak hour" value={mockAnalytics.peakHour} delta={`${mockAnalytics.peakOrderCount} orders`} icon={TrendingUp} accent="success" />
-              </div>
-
-              <div className="grid lg:grid-cols-2 gap-5">
-                {/* Hourly orders bar chart */}
-                <div className="rounded-3xl border border-border bg-background p-6">
-                  <div className="label-mono mb-4">● Orders by hour</div>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={mockAnalytics.hourlyOrders} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                      <XAxis dataKey="hour" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip
-                        contentStyle={{
-                          background: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                        }}
-                      />
-                      <Bar dataKey="orders" fill="hsl(211 100% 59%)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Best sellers */}
-                <div className="rounded-3xl border border-border bg-background p-6">
-                  <div className="label-mono mb-4">● Best sellers</div>
-                  <ul className="space-y-4">
-                    {mockAnalytics.bestSellers.map((item, idx) => (
-                      <li key={item.name}>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-3">
-                            <span className="font-mono text-xs text-muted-foreground w-5">#{idx + 1}</span>
-                            <span className="font-medium text-sm">{item.name}</span>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-mono text-sm">{item.sold} sold</div>
-                            <div className="text-xs text-muted-foreground">Rs {item.revenue.toLocaleString()}</div>
-                          </div>
-                        </div>
-                        <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full transition-all duration-500"
-                            style={{ width: `${(item.sold / mockAnalytics.bestSellers[0].sold) * 100}%` }}
-                          />
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Revenue breakdown pie */}
-                <div className="rounded-3xl border border-border bg-background p-6">
-                  <div className="label-mono mb-4">● Revenue breakdown</div>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={mockAnalytics.revenueBreakdown}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={false}
-                      >
-                        {mockAnalytics.revenueBreakdown.map((_, index) => (
-                          <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(v: any) => `Rs ${v.toLocaleString()}`} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Customer stats placeholder */}
-                <div className="rounded-3xl border border-border bg-background p-6">
-                  <div className="label-mono mb-4">● Customer insights</div>
-                  {/* TODO: Replace with real Supabase analytics query */}
-                  <div className="space-y-3">
-                    {[
-                      { label: "Repeat customers", value: "68%" },
-                      { label: "Avg order value", value: "Rs 297" },
-                      { label: "Avg rating", value: `★ ${shop.rating}` },
-                      { label: "Reviews", value: String(shop.reviewCount) },
-                    ].map((stat) => (
-                      <div key={stat.label} className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">{stat.label}</span>
-                        <span className="font-mono font-semibold text-sm">{stat.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ── SETTINGS TAB ── */}
-          {tab === "settings" && (
-            <div className="max-w-xl space-y-4">
-              <div className="rounded-3xl border border-border bg-background p-6">
-                <div className="label-mono mb-4">Shop media</div>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <label className="pill border border-border px-4 py-3 text-sm font-medium hover:bg-secondary transition-smooth focus-dashed cursor-pointer flex items-center justify-center gap-2">
-                    <Upload className="w-4 h-4" /> Upload logo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      onChange={async (event) => {
-                        const file = event.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          await updateShopAsset(file, "logo_url");
-                        } catch (error) {
-                          toast.error(error instanceof Error ? error.message : "Logo upload failed");
-                        } finally {
-                          event.target.value = "";
-                        }
-                      }}
-                    />
-                  </label>
-                  <label className="pill border border-border px-4 py-3 text-sm font-medium hover:bg-secondary transition-smooth focus-dashed cursor-pointer flex items-center justify-center gap-2">
-                    <Upload className="w-4 h-4" /> Upload banner
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      onChange={async (event) => {
-                        const file = event.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          await updateShopAsset(file, "banner_url");
-                        } catch (error) {
-                          toast.error(error instanceof Error ? error.message : "Banner upload failed");
-                        } finally {
-                          event.target.value = "";
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-              <SettingRow
-                label="Shop status"
-                value={shopOpen ? "Open — accepting orders" : "Closed"}
-                badge={shopOpen ? "LIVE" : "OFFLINE"}
-                badgeColor={shopOpen ? "success" : "muted"}
-              />
-              <SettingRow
-                label="Payment link"
-                value={shop.paymentLink ?? "Not configured"}
-                hint="Students are redirected here when checking out"
-              />
-              <SettingRow
-                label="Default prep time"
-                value={shop.prepTime}
-              />
-              <SettingRow
-                label="Closed-day note"
-                value={shop.closedNote ?? "Not set"}
-                hint="Shown to customers when your shop is closed"
-              />
-              <SettingRow
-                label="Shop slug (URL)"
-                value={`theedge.com/shop/${shop.slug}`}
-                hint="This cannot be changed after approval"
-                readOnly
-              />
-
-              {/* Danger zone */}
-              <div className="rounded-3xl border border-destructive/20 bg-destructive/5 p-6">
-                <div className="label-mono mb-3 text-destructive">Danger zone</div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-sm">Temporarily close shop</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Customers won&apos;t be able to order until you reopen</div>
-                  </div>
-                  <button className="pill border border-destructive/40 text-destructive px-4 py-2 text-sm font-medium hover:bg-destructive/10 transition-smooth focus-dashed">
-                    Close shop
-                    {/* TODO: UPDATE shop SET is_open = false in Supabase */}
-                  </button>
-                </div>
-              </div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-bold uppercase tracking-widest text-xs text-muted-foreground">Receipt Preview</h3>
+                      <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-secondary rounded-full">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <ReceiptPreview order={selectedOrder} />
+                    <div className="mt-8 flex gap-3">
+                       <Button variant="outline" className="flex-1 pill h-12" onClick={() => window.print()}>
+                         <Printer className="w-4 h-4 mr-2" /> Print Ticket
+                       </Button>
+                       {selectedOrder.status === "ready" ? (
+                         <Button className="flex-1 pill h-12 bg-success hover:bg-success/90" onClick={() => handleUpdateStatus(selectedOrder.id, "completed")}>
+                           <Check className="w-4 h-4 mr-2" /> Complete
+                         </Button>
+                       ) : (
+                         <Button className="flex-1 pill h-12 bg-foreground text-background" onClick={() => handleUpdateStatus(selectedOrder.id, "ready", "preparing")}>
+                           <Bell className="w-4 h-4 mr-2" /> Make Ready
+                         </Button>
+                       )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
+          {/* Other tabs remain placeholders for now or can be ported later */}
+          {tab !== "orders" && (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground italic">
+               <p>Section &ldquo;{tab}&rdquo; under reconstruction for multi-shop flow.</p>
+            </div>
+          )}
         </div>
       </main>
+
+      {/* Mobile Receipt Bottom Sheet */}
+      <AnimatePresence>
+        {selectedOrder && (
+          <div className="lg:hidden fixed inset-0 z-50 flex items-end justify-center bg-background/80 backdrop-blur-sm p-4">
+             <motion.div 
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                className="w-full max-w-md bg-background border border-border rounded-t-[2.5rem] shadow-2xl p-6 overflow-y-auto max-h-[90vh]"
+             >
+                <div className="flex justify-center mb-4">
+                  <div className="w-12 h-1 bg-secondary rounded-full" />
+                </div>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold">Order Details</h3>
+                  <button onClick={() => setSelectedOrder(null)} className="p-2 bg-secondary rounded-full">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <ReceiptPreview order={selectedOrder} />
+                <div className="mt-8 space-y-3">
+                   <Button className="w-full pill h-14 bg-foreground text-background" onClick={() => handleUpdateStatus(selectedOrder.id, selectedOrder.status === "ready" ? "completed" : "ready", selectedOrder.status)}>
+                      {selectedOrder.status === "ready" ? "Mark as Completed" : "Mark as Ready"}
+                   </Button>
+                   <Button variant="outline" className="w-full pill h-14" onClick={() => setSelectedOrder(null)}>
+                      Close
+                   </Button>
+                </div>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// Sub-components
-function StatCard({
-  label, value, delta, icon: Icon, accent,
-}: {
-  label: string;
-  value: string;
-  delta: string;
-  icon: React.ElementType;
-  accent: "primary" | "success" | "foreground" | "warning";
-}) {
-  const iconClass =
-    accent === "primary" ? "bg-primary/10 text-primary"
-    : accent === "success" ? "bg-success-soft text-success-foreground"
-    : accent === "warning" ? "bg-warning/15 text-warning-foreground"
-    : "bg-foreground text-background";
+// ── SUB-COMPONENTS ──
 
-  return (
-    <div className="rounded-3xl bg-background border border-border p-5">
-      <div className="flex items-center justify-between">
-        <span className="label-mono">{label}</span>
-        <div className={`w-9 h-9 rounded-xl grid place-items-center ${iconClass}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-      </div>
-      <div className="mt-3 font-mono text-3xl font-bold">{value}</div>
-      <div className="text-xs text-muted-foreground mt-1">{delta}</div>
-    </div>
-  );
-}
-
-function SettingRow({
-  label, value, hint, badge, badgeColor, readOnly,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  badge?: string;
-  badgeColor?: "success" | "muted";
-  readOnly?: boolean;
+function OrderCard({ 
+  order, 
+  onClick, 
+  onStatusChange,
+  isActive 
+}: { 
+  order: VendorOrder, 
+  onClick: () => void,
+  onStatusChange: (id: string, status: OrderStatus, prev?: OrderStatus) => void,
+  isActive: boolean
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-background p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="label-mono mb-1">{label}</div>
-          <div className="font-medium text-sm truncate">{value}</div>
-          {hint && <div className="text-xs text-muted-foreground mt-1">{hint}</div>}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {badge && (
-            <span className={`pill text-[10px] font-bold px-2 py-1 ${
-              badgeColor === "success" ? "bg-success-soft text-success-foreground" : "bg-muted text-muted-foreground"
-            }`}>
-              {badge}
+    <motion.div 
+      layout
+      onClick={onClick}
+      className={`group relative rounded-3xl border p-5 cursor-pointer transition-all ${
+        isActive 
+          ? "bg-foreground text-background border-foreground shadow-2xl scale-[1.02] z-10" 
+          : "bg-card border-border hover:border-primary/50 hover:shadow-lg shadow-sm"
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <span className={`font-mono font-black text-lg tracking-tighter ${isActive ? "text-primary" : "text-primary"}`}>
+            #{order.code}
+          </span>
+          {order.scheduledSlot !== "ASAP" && (
+            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1 ${isActive ? "bg-white/10 text-white" : "bg-secondary text-muted-foreground"}`}>
+              <Clock className="w-2.5 h-2.5" /> {order.scheduledSlot}
             </span>
           )}
-          {!readOnly && (
-            <button className="pill bg-secondary px-4 py-1.5 text-sm font-medium hover:bg-accent focus-dashed transition-smooth">
-              Edit
-              {/* TODO: Open edit modal — UPDATE in Supabase */}
+        </div>
+        <span className={`text-[10px] font-medium ${isActive ? "text-background/60" : "text-muted-foreground"}`}>
+          {order.time}
+        </span>
+      </div>
+
+      <div className="space-y-1.5 mb-4">
+        {order.itemDetails.map((it, idx) => (
+          <div key={idx} className="flex justify-between items-start gap-4">
+            <span className={`text-sm font-semibold line-clamp-1 ${isActive ? "text-background" : "text-foreground"}`}>
+              {it.quantity}× {it.title}
+            </span>
+            <span className={`font-mono text-xs ${isActive ? "text-background/70" : "text-muted-foreground"}`}>
+              Rs {it.quantity * it.unitPrice}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {order.note && (
+        <div className={`text-[11px] rounded-xl px-3 py-2 mb-4 italic ${isActive ? "bg-white/10 text-white/90" : "bg-warning/10 text-warning-foreground"}`}>
+          &ldquo;{order.note}&rdquo;
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-3 border-t border-current/10">
+        <div className="flex items-center gap-2">
+           <User className="w-3 h-3 opacity-60" />
+           <span className="text-[11px] font-bold uppercase tracking-widest">{order.customerName}</span>
+        </div>
+        
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          {order.status !== "ready" ? (
+            <button
+              onClick={() => onStatusChange(order.id, "ready", "preparing")}
+              className={`pill text-[10px] font-bold px-4 py-2 transition-all ${
+                isActive 
+                  ? "bg-primary text-primary-foreground hover:bg-primary-glow" 
+                  : "bg-foreground text-background hover:bg-foreground/80"
+              }`}
+            >
+              Make Ready
+            </button>
+          ) : (
+            <button
+              onClick={() => onStatusChange(order.id, "completed")}
+              className={`pill text-[10px] font-bold px-4 py-2 transition-all ${
+                isActive 
+                  ? "bg-success text-success-foreground hover:opacity-90" 
+                  : "bg-success text-success-foreground hover:opacity-90"
+              }`}
+            >
+              Complete
             </button>
           )}
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+function ReceiptPreview({ order }: { order: VendorOrder }) {
+  const formattedRef = order.referenceNumber.replace(/^RF (\d{4}) (\d{6}) (\d{4})$/, "#RF $1 $2 $3");
+
+  return (
+    <div className="receipt-print-container bg-white text-black p-8 rounded-lg shadow-inner font-sans border-2 border-dashed border-gray-200">
+      <div className="text-center mb-6">
+        <h4 className="font-black text-xl tracking-tighter uppercase mb-1">Order Ticket</h4>
+        <div className="text-[10px] text-gray-500 uppercase tracking-widest">{order.createdAt}</div>
+      </div>
+
+      <div className="flex flex-col items-center mb-8 py-6 border-y-2 border-black border-dashed">
+        <div className="text-[10px] font-bold uppercase tracking-widest mb-1 text-gray-500">Pickup Code</div>
+        <div className="text-6xl font-black tracking-tighter">{order.code}</div>
+      </div>
+
+      <div className="space-y-4 mb-8">
+        <div className="flex justify-between items-end border-b border-gray-100 pb-2">
+          <span className="text-[10px] font-bold uppercase text-gray-400">Customer</span>
+          <span className="font-bold text-sm">{order.customerName}</span>
+        </div>
+        <div className="flex justify-between items-end border-b border-gray-100 pb-2">
+          <span className="text-[10px] font-bold uppercase text-gray-400">Scheduled For</span>
+          <span className="font-bold text-sm">{order.scheduledSlot}</span>
+        </div>
+      </div>
+
+      <div className="space-y-3 mb-8">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Order Items</div>
+        {order.itemDetails.map((it, i) => (
+          <div key={i} className="flex justify-between text-sm">
+            <span className="font-bold">{it.quantity}× {it.title}</span>
+            <span className="font-mono">Rs {it.quantity * it.unitPrice}</span>
+          </div>
+        ))}
+        <div className="pt-4 border-t-2 border-black border-dotted flex justify-between items-center">
+          <span className="font-black uppercase text-sm">Total Paid</span>
+          <span className="font-mono font-black text-lg">Rs {order.total}</span>
+        </div>
+      </div>
+
+      {order.note && (
+        <div className="bg-gray-50 p-3 rounded-md mb-8">
+          <div className="text-[10px] font-bold uppercase text-gray-400 mb-1">Notes</div>
+          <p className="text-xs italic leading-relaxed">&ldquo;{order.note}&rdquo;</p>
+        </div>
+      )}
+
+      <div className="text-center pt-4 border-t border-gray-100">
+        <div className="text-[10px] font-bold text-gray-400 mb-1">REFERENCE NUMBER</div>
+        <div className="font-mono text-[11px] font-bold tracking-tighter">{formattedRef}</div>
+      </div>
+      
+      <div className="mt-8 flex justify-center opacity-10">
+        <div className="w-12 h-12 border-4 border-black rounded-full" />
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ message, icon: Icon }: { message: string, icon: any }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 px-6 rounded-[2.5rem] bg-background/40 border-2 border-dashed border-border/50 text-muted-foreground">
+      <div className="w-12 h-12 rounded-2xl bg-secondary/50 grid place-items-center mb-4">
+        <Icon className="w-6 h-6" />
+      </div>
+      <p className="text-sm font-medium">{message}</p>
     </div>
   );
 }

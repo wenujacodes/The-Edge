@@ -8,7 +8,7 @@ import { Footer } from "@/components/layout/Footer";
 import { PWABanner } from "@/components/layout/PWABanner";
 import { ShopCard } from "@/components/shop/ShopCard";
 import { FoodCard } from "@/components/shop/FoodCard";
-import { useMenuItems, useShops } from "@/lib/supabase/hooks";
+import { useMenuItems, useShops, useServerFavorites, useSupabaseUser } from "@/lib/supabase/hooks";
 import { useCart } from "@/store/cart";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useProfile } from "@/store/profile";
@@ -16,6 +16,7 @@ import { useProfile } from "@/store/profile";
 export default function HomePage() {
   const [query, setQuery] = useState("");
   const router = useRouter();
+  const { data: user } = useSupabaseUser();
   const { data: shops = [] } = useShops();
   const { data: items = [] } = useMenuItems();
   const { favorites } = useCart();
@@ -34,8 +35,9 @@ export default function HomePage() {
   );
 
   const mostOrdered = useMemo(() => items.filter((i) => i.popular && i.isAvailable), [items]);
-  const recentlyOrdered = useMemo(() => items.slice(0, 6), [items]); // Mocking recently ordered for now
-  const favouriteItems = useMemo(() => items.filter((i) => favorites.includes(i.id)), [items, favorites]);
+  const recentlyOrdered = useMemo(() => items.slice(0, 6), [items]); 
+  const { data: serverFavorites = [] } = useServerFavorites(user?.id);
+  const favouriteItems = useMemo(() => items.filter((i) => serverFavorites.includes(i.id)), [items, serverFavorites]);
 
   const hasFavorites = favouriteItems.length > 0;
 

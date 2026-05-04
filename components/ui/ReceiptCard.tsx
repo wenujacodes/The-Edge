@@ -78,17 +78,23 @@ export function ReceiptCard({ order }: { order: PerShopOrder }) {
 
         {/* Items list */}
         <div className="space-y-2.5 mb-3">
-          {order.items.map((c, idx) => (
-            <div key={idx} className="flex justify-between items-start text-base">
-              <div className="flex-1 min-w-0 pr-3">
-                <span className="font-semibold">{c.qty}<span className="text-muted-foreground mx-1 text-sm">×</span>{c.item.title}</span>
-                {c.notes && (
-                  <div className="text-xs text-muted-foreground italic mt-0.5">Note: {c.notes}</div>
-                )}
+          {order.items.map((c: any, idx) => {
+            const title = c.title || c.item?.title || "Item";
+            const price = c.price || c.unitPrice || c.item?.price || 0;
+            const quantity = c.qty || c.quantity || 0;
+            
+            return (
+              <div key={idx} className="flex justify-between items-start text-base">
+                <div className="flex-1 min-w-0 pr-3">
+                  <span className="font-semibold">{quantity}<span className="text-muted-foreground mx-1 text-sm">×</span>{title}</span>
+                  {c.notes && (
+                    <div className="text-xs text-muted-foreground italic mt-0.5">Note: {c.notes}</div>
+                  )}
+                </div>
+                <span className="font-mono text-base font-semibold shrink-0">Rs {quantity * price}</span>
               </div>
-              <span className="font-mono text-base font-semibold shrink-0">Rs {c.qty * c.item.price}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Dashed divider */}

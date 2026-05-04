@@ -6,10 +6,9 @@ import { useParams, useRouter } from "next/navigation";
 import { Check, ChefHat, Bell, ArrowRight, ArrowLeft, RotateCcw, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
 import { ReceiptCard } from "@/components/ui/ReceiptCard";
-import { useLiveOrder } from "@/lib/supabase/hooks";
+import { useLiveOrder, useUserOrders, useSupabaseUser } from "@/lib/supabase/hooks";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
-import { mockUserOrders, type PerShopOrder } from "@/lib/mockData";
 
 type Stage = 0 | 1 | 2;
 
@@ -23,56 +22,28 @@ export default function OrderStatusPage() {
   const params = useParams();
   const router = useRouter();
   const rawId = decodeURIComponent(params?.id as string);
+  const { data: user } = useSupabaseUser();
   const [stage, setStage] = useState<Stage>(0);
-  const [order, setOrder] = useState<PerShopOrder | null>(null);
-  const [allOrders, setAllOrders] = useState<PerShopOrder[]>([]);
+  const [order, setOrder] = useState<any | null>(null);
+  const { data: allOrders = [] } = useUserOrders(user?.id);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [expired, setExpired] = useState(false);
   const { add } = useCart();
-  const { data: liveOrder } = useLiveOrder(rawId);
+  const { data: liveOrder, isLoading: isLiveLoading } = useLiveOrder(rawId);
 
   // Swipe tracking
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Load all orders and find the current one by reference number
+  // Find the current order in the list
   useEffect(() => {
-    // Gather all orders from localStorage + mock
-    let merged: PerShopOrder[] = [...mockUserOrders];
-    const saved = localStorage.getItem("edge-orders");
-    if (saved) {
-      try {
-        const local: PerShopOrder[] = JSON.parse(saved);
-        merged = [...local, ...merged];
-      } catch {}
-    }
-    // Sort by date desc
-    merged.sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
-    setAllOrders(merged);
-
-    // Find the order matching the reference number
-    const idx = merged.findIndex((o) => o.referenceNumber === rawId);
+    if (!allOrders.length) return;
+    const idx = allOrders.findIndex((o) => o.referenceNumber === rawId);
     if (idx >= 0) {
-      setOrder(merged[idx]);
       setCurrentIndex(idx);
-    } else {
-      // Fallback: also check last-orders from checkout
-      const lastOrders = localStorage.getItem("edge-last-orders");
-      if (lastOrders) {
-        try {
-          const parsed: PerShopOrder[] = JSON.parse(lastOrders);
-          const found = parsed.find((o) => o.referenceNumber === rawId);
-          if (found) {
-            setOrder(found);
-            // The allOrders already includes these so find index
-            const foundIdx = merged.findIndex((o) => o.referenceNumber === rawId);
-            setCurrentIndex(foundIdx >= 0 ? foundIdx : 0);
-          }
-        } catch {}
-      }
     }
-  }, [rawId]);
+  }, [rawId, allOrders]);
 
   // Navigate to adjacent order
   const navigateTo = useCallback((index: number) => {
@@ -118,40 +89,11 @@ export default function OrderStatusPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentIndex, allOrders.length, navigateTo]);
 
-  // Timer effects for demo
-  useEffect(() => {
-    if (liveOrder) return;
-
-    const t1 = setTimeout(() => setStage(1), 2500);
-    const t2 = setTimeout(() => {
-      setStage(2);
-      if (order) {
-        toast.success("🎉 Your order is ready for pickup!", {
-          description: `Show code ${order.orderCode} at the counter`,
-          duration: 8000,
-        });
-      }
-    }, 6000);
-
-    const t3 = setTimeout(() => {
-      setExpired(true);
-      toast.error("Order expired", {
-        description: "This order has been cancelled. Please place a new order.",
-      });
-    }, 90000);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
-  }, [rawId, liveOrder, order]);
-
   useEffect(() => {
     if (!liveOrder) return;
 
     const statusStage: Record<string, Stage> = {
-      new: 0,
+      paid: 0,
       preparing: 1,
       ready: 2,
       completed: 2,
@@ -162,39 +104,40 @@ export default function OrderStatusPage() {
     setStage(statusStage[liveOrder.status] ?? 0);
     setExpired(liveOrder.status === "expired" || liveOrder.status === "customer_late");
 
-    const livePerShop: PerShopOrder = {
+    const livePerShop = {
       id: liveOrder.id,
-      orderCode: "",
-      referenceNumber: rawId,
-      shopId: liveOrder.items[0]?.shopId || "",
-      shopName: "Campus vendor",
-      shopEmoji: "🍽️",
-      customerName: "Guest",
+      orderCode: liveOrder.code,
+      referenceNumber: liveOrder.referenceNumber,
+      shopId: liveOrder.shopId || "",
+      shopName: liveOrder.shopName || "Campus vendor",
+      shopEmoji: liveOrder.shopEmoji || "🍽️",
+      shopBanner: liveOrder.shopBanner,
+      customerName: liveOrder.customerName || "Guest",
       items: liveOrder.items.map((item: any) => ({
-        item: {
-          id: item.id,
-          shopId: item.shopId,
-          title: item.title,
-          description: "",
-          image: "/icons/icon-512.png",
-          price: item.unitPrice,
-          category: "",
-          dietaryTags: [],
-          estimatedPrepTime: "",
-          isAvailable: true,
-        },
+        id: item.id,
+        title: item.title,
+        price: item.unitPrice,
+        image: item.imageUrl || "/icons/icon-512.png",
         qty: item.quantity,
         notes: item.notes,
         dining: item.dining,
       })),
       total: liveOrder.total,
-      orderTime: "",
+      orderTime: liveOrder.pickupTime || "",
       status: liveOrder.status,
-      placedAt: new Date().toISOString(),
-      slot: "ASAP",
+      placedAt: liveOrder.createdAt,
+      slot: liveOrder.scheduledSlot,
     };
     setOrder(livePerShop);
-  }, [liveOrder, rawId]);
+  }, [liveOrder]);
+
+  if (isLiveLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading order details...</div>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -212,8 +155,19 @@ export default function OrderStatusPage() {
   }
 
   const handleReorder = () => {
-    order.items.forEach((c) => {
-      add(c.item, c.qty, { notes: c.notes, dining: c.dining as "dine-in" | "takeaway" });
+    order.items.forEach((c: any) => {
+      add({
+        id: c.id,
+        shopId: order.shopId,
+        title: c.title,
+        price: c.price,
+        description: "",
+        image: c.image,
+        category: "",
+        dietaryTags: [],
+        estimatedPrepTime: "",
+        isAvailable: true
+      }, c.qty, { notes: c.notes, dining: c.dining as "dine-in" | "takeaway" });
     });
     toast.success("Items added to cart!");
   };

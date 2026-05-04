@@ -8,29 +8,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
-import { mockUserOrders, displayReferenceNumber, type PerShopOrder } from "@/lib/mockData";
+import { displayReferenceNumber } from "@/lib/mockData";
+import { useUserOrders, useSupabaseUser } from "@/lib/supabase/hooks";
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<PerShopOrder[]>([]);
+  const { data: user } = useSupabaseUser();
+  const { data: orders = [], isLoading } = useUserOrders(user?.id);
   const [filter, setFilter] = useState<"all" | "today" | "week" | "month">("today");
   const [visibleCount, setVisibleCount] = useState(5);
   const { add } = useCart();
-
-  useEffect(() => {
-    const saved = localStorage.getItem("edge-orders");
-    let allOrders: PerShopOrder[] = [...mockUserOrders];
-    
-    if (saved) {
-      try {
-        const local: PerShopOrder[] = JSON.parse(saved);
-        allOrders = [...local, ...allOrders];
-      } catch {}
-    }
-    
-    // Sort by date desc
-    allOrders.sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
-    setOrders(allOrders);
-  }, []);
 
   const filteredOrders = useMemo(() => {
     const now = new Date();
@@ -38,8 +24,8 @@ export default function OrdersPage() {
     const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    return orders.filter((o) => {
-      const placed = new Date(o.placedAt);
+    return (orders || []).filter((o) => {
+      const placed = new Date(o.createdAt);
       if (filter === "today") return placed >= startOfToday;
       if (filter === "week") return placed >= startOfWeek;
       if (filter === "month") return placed >= startOfMonth;
@@ -64,9 +50,20 @@ export default function OrdersPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [visibleCount, filteredOrders.length]);
 
-  const handleReorder = (order: PerShopOrder) => {
-    order.items.forEach((c) => {
-      add(c.item, c.qty, { notes: c.notes, dining: c.dining as "dine-in" | "takeaway" });
+  const handleReorder = (order: any) => {
+    order.items.forEach((c: any) => {
+      add({
+        id: c.id,
+        shopId: order.shopId,
+        title: c.title,
+        price: c.unitPrice,
+        description: "",
+        image: c.imageUrl || "/icons/icon-512.png",
+        category: "",
+        dietaryTags: [],
+        estimatedPrepTime: "",
+        isAvailable: true
+      }, c.quantity, { notes: c.notes, dining: c.dining as "dine-in" | "takeaway" });
     });
     toast.success("Items added to cart!");
   };
@@ -142,7 +139,7 @@ export default function OrdersPage() {
                         ) : (
                           <Clock className="w-3 h-3" />
                         )}
-                        {(order.status?.toUpperCase() || "PREPARING")}
+                        {(order.status?.toUpperCase() || "PAID")}
                       </div>
                     </div>
                   </div>
@@ -152,15 +149,15 @@ export default function OrdersPage() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-xl bg-secondary grid place-items-center font-mono font-bold text-sm tracking-widest">
-                          {order.orderCode}
+                          {order.code}
                         </div>
                         <div>
                           <div className="font-semibold">
-                            {order.items[0]?.item?.title ?? "Order"}
+                            {order.items[0]?.title ?? "Order"}
                             {order.items.length > 1 ? ` + ${order.items.length - 1} more` : ""}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {new Date(order.placedAt).toLocaleDateString("en-US", {
+                            {new Date(order.createdAt).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                               hour: "2-digit",
@@ -179,7 +176,7 @@ export default function OrdersPage() {
                     {/* Actions */}
                     <div className="flex items-center justify-between">
                       <button
-                        id={`reorder-${order.orderCode}`}
+                        id={`reorder-${order.code}`}
                         onClick={() => handleReorder(order)}
                         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-smooth focus-dashed"
                       >

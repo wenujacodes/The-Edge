@@ -244,3 +244,38 @@
     --offset: 80px !important;
   }
 }
+
+/* ── THERMAL RECEIPT PRINT STYLES ── */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Show only the receipt content */
+  .receipt-print-container,
+  .receipt-print-container * {
+    visibility: visible;
+  }
+  
+  .receipt-print-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    background: white !important;
+    color: black !important;
+    font-family: 'Courier New', Courier, monospace !important;
+  }
+
+  header, footer, aside, nav, button {
+    display: none !important;
+  }
+
+  @page {
+    margin: 0;
+    size: auto;
+  }
+}

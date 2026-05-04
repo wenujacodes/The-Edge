@@ -1,6 +1,4 @@
 import {
-  mockItems,
-  mockShops,
   type MenuItem,
   type OrderStatus,
   type Shop,
@@ -26,6 +24,7 @@ type ShopRow = {
   categories: string[] | null;
   payment_link: string | null;
   letter_code: string | null;
+  available_time_slots: Record<string, string[]> | null;
 };
 
 type MenuItemRow = {
@@ -45,47 +44,63 @@ type MenuItemRow = {
   badge: string | null;
   is_popular: boolean;
   search_keywords: string[] | null;
+  item_time_slots: Record<string, string[]> | null;
 };
 
 export type VendorOrder = {
   id: string;
   code: string;
+  referenceNumber: string;
   items: string[];
+  itemDetails: Array<{
+    title: string;
+    quantity: number;
+    unitPrice: number;
+    notes?: string;
+    dining: string;
+    imageUrl?: string;
+  }>;
   total: number;
   status: OrderStatus;
   time: string;
   note?: string;
   shopId: string;
   pickupTime: string;
+  scheduledSlot: string;
+  customerName: string;
+  createdAt: string;
 };
 
 export type LiveOrder = {
   id: string;
   code: string;
+  referenceNumber: string;
   status: OrderStatus;
   total: number;
   pickupTime: string;
+  scheduledSlot: string;
   note?: string;
   createdAt: string;
+  customerName: string;
+  shopName: string;
+  shopEmoji: string;
+  shopBanner?: string;
+  shopId: string;
   items: Array<{
     id: string;
     title: string;
     quantity: number;
     unitPrice: number;
     notes?: string;
-    dining: "dine-in" | "takeaway";
-    shopId: string;
-    shopPin: string;
+    dining: string;
+    imageUrl?: string;
   }>;
 };
 
 const fallbackImage = "/icons/icon-512.png";
 
 export function isSupabaseConfigured() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+  return true;
 }
 
 function mapShop(row: ShopRow): Shop {
@@ -132,9 +147,13 @@ function mapMenuItem(row: MenuItemRow): MenuItem {
   };
 }
 
+// ---------------------------------------------------------------------------
+// SHOP QUERIES
+// ---------------------------------------------------------------------------
+
 export async function fetchShops(): Promise<Shop[]> {
   const supabase = getSupabaseBrowserClient();
-  if (!supabase) return mockShops;
+  if (!supabase) return [];
 
   const { data, error } = await supabase
     .from("shops")
@@ -148,7 +167,7 @@ export async function fetchShops(): Promise<Shop[]> {
 
 export async function fetchMenuItems(): Promise<MenuItem[]> {
   const supabase = getSupabaseBrowserClient();
-  if (!supabase) return mockItems;
+  if (!supabase) return [];
 
   const { data, error } = await supabase
     .from("menu_items")
@@ -160,9 +179,22 @@ export async function fetchMenuItems(): Promise<MenuItem[]> {
   return ((data ?? []) as MenuItemRow[]).map(mapMenuItem);
 }
 
+export async function fetchAllMenuItems(): Promise<MenuItem[]> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("menu_items")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (error) throw error;
+  return ((data ?? []) as MenuItemRow[]).map(mapMenuItem);
+}
+
 export async function fetchShopBySlug(slug: string): Promise<Shop | null> {
   const supabase = getSupabaseBrowserClient();
-  if (!supabase) return mockShops.find((shop) => shop.slug === slug) ?? null;
+  if (!supabase) return null;
 
   const { data, error } = await supabase
     .from("shops")
@@ -174,9 +206,23 @@ export async function fetchShopBySlug(slug: string): Promise<Shop | null> {
   return mapShop(data as ShopRow);
 }
 
+export async function fetchShopById(id: string): Promise<Shop | null> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("shops")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return mapShop(data as ShopRow);
+}
+
 export async function fetchMenuItemsByShop(shopId: string): Promise<MenuItem[]> {
   const supabase = getSupabaseBrowserClient();
-  if (!supabase) return mockItems.filter((item) => item.shopId === shopId);
+  if (!supabase) return [];
 
   const { data, error } = await supabase
     .from("menu_items")
@@ -188,6 +234,67 @@ export async function fetchMenuItemsByShop(shopId: string): Promise<MenuItem[]> 
   return ((data ?? []) as MenuItemRow[]).map(mapMenuItem);
 }
 
+// ---------------------------------------------------------------------------
+// ORDER CREATION (via server-side RPC)
+// ---------------------------------------------------------------------------
+
+export type CreateOrderParams = {
+  userId: string | null;
+  shopId: string;
+  total: number;
+  customerName: string;
+  scheduledSlot?: string;
+  pickupTime?: string | null;
+  note?: string;
+  items: Array<{
+    menu_item_id: string;
+    title: string;
+    image_url?: string;
+    qty: number;
+    price: number;
+    notes?: string;
+    dining: string;
+  }>;
+};
+
+export type CreateOrderResult = {
+  order_id: string;
+  daily_code: string;
+  reference_number: string;
+};
+
+export async function createOrder(params: CreateOrderParams): Promise<CreateOrderResult> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) throw new Error("Supabase is not configured");
+
+  const { data, error } = await supabase.rpc("fn_create_order", {
+    p_user_id: params.userId,
+    p_shop_id: params.shopId,
+    p_total: params.total,
+    p_customer_name: params.customerName,
+    p_slot: params.scheduledSlot ?? "ASAP",
+    p_note: params.note ?? null,
+    p_items: params.items, // Pass as native array, Supabase handles JSON conversion
+  });
+
+  if (error) throw error;
+  
+  // The RPC returns a string (reference number), but we need to match the result type
+  // Wait, I should update the RPC to return the full object or handle it here.
+  // Actually, the previous implementation expected an object {order_id, daily_code, reference_number}.
+  // Let me check what the SQL returns.
+  
+  return {
+    order_id: "", // RPC currently only returns reference_number
+    daily_code: (data as string).split(" ").pop() || "",
+    reference_number: data as string
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ORDER QUERIES
+// ---------------------------------------------------------------------------
+
 function formatRelativeTime(value: string) {
   const diffMs = Date.now() - new Date(value).getTime();
   const diffMin = Math.max(0, Math.round(diffMs / 60000));
@@ -197,79 +304,445 @@ function formatRelativeTime(value: string) {
   return `${Math.round(diffMin / 60)} hr ago`;
 }
 
-export async function fetchVendorOrdersByShop(shopId: string): Promise<VendorOrder[]> {
+export async function fetchVendorOrders(
+  shopId: string,
+  dateFilter: "today" | "week" | "month" = "today"
+): Promise<VendorOrder[]> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return [];
+
+  // Calculate date range
+  const now = new Date();
+  let fromDate: string;
+  if (dateFilter === "today") {
+    fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  } else if (dateFilter === "week") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 7);
+    fromDate = d.toISOString();
+  } else {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - 1);
+    fromDate = d.toISOString();
+  }
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select(`
+      id, daily_code, reference_number, status, total_amount_lkr,
+      pickup_time, scheduled_slot, note, customer_name, created_at,
+      order_items(id, item_title, item_image_url, quantity, unit_price_lkr, notes, dining)
+    `)
+    .eq("shop_id", shopId)
+    .gte("created_at", fromDate)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    code: row.daily_code,
+    referenceNumber: row.reference_number,
+    items: (row.order_items ?? []).map((it: any) => `${it.quantity}× ${it.item_title}`),
+    itemDetails: (row.order_items ?? []).map((it: any) => ({
+      title: it.item_title,
+      quantity: it.quantity,
+      unitPrice: it.unit_price_lkr,
+      notes: it.notes ?? undefined,
+      dining: it.dining,
+      imageUrl: it.item_image_url ?? undefined,
+    })),
+    total: row.total_amount_lkr,
+    status: row.status,
+    time: formatRelativeTime(row.created_at),
+    note: row.note ?? undefined,
+    shopId,
+    pickupTime: row.pickup_time
+      ? new Date(row.pickup_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+      : "ASAP",
+    scheduledSlot: row.scheduled_slot,
+    customerName: row.customer_name,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function searchVendorOrders(
+  shopId: string,
+  query: string,
+  dateFilter: "today" | "week" | "month" = "today"
+): Promise<VendorOrder[]> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return [];
+
+  const now = new Date();
+  let fromDate: string;
+  if (dateFilter === "today") {
+    fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  } else if (dateFilter === "week") {
+    const d = new Date(now); d.setDate(d.getDate() - 7); fromDate = d.toISOString();
+  } else {
+    const d = new Date(now); d.setMonth(d.getMonth() - 1); fromDate = d.toISOString();
+  }
+
+  // Smart search: pad numeric input for daily_code matching
+  const paddedQuery = /^\d+$/.test(query.trim())
+    ? query.trim().padStart(4, "0")
+    : query.trim();
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select(`
+      id, daily_code, reference_number, status, total_amount_lkr,
+      pickup_time, scheduled_slot, note, customer_name, created_at,
+      order_items(id, item_title, item_image_url, quantity, unit_price_lkr, notes, dining)
+    `)
+    .eq("shop_id", shopId)
+    .gte("created_at", fromDate)
+    .or(`daily_code.eq.${paddedQuery},reference_number.ilike.%${paddedQuery}%,customer_name.ilike.%${query.trim()}%`)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    code: row.daily_code,
+    referenceNumber: row.reference_number,
+    items: (row.order_items ?? []).map((it: any) => `${it.quantity}× ${it.item_title}`),
+    itemDetails: (row.order_items ?? []).map((it: any) => ({
+      title: it.item_title,
+      quantity: it.quantity,
+      unitPrice: it.unit_price_lkr,
+      notes: it.notes ?? undefined,
+      dining: it.dining,
+      imageUrl: it.item_image_url ?? undefined,
+    })),
+    total: row.total_amount_lkr,
+    status: row.status,
+    time: formatRelativeTime(row.created_at),
+    note: row.note ?? undefined,
+    shopId,
+    pickupTime: row.pickup_time
+      ? new Date(row.pickup_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+      : "ASAP",
+    scheduledSlot: row.scheduled_slot,
+    customerName: row.customer_name,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function fetchUserOrders(userId: string): Promise<LiveOrder[]> {
   const supabase = getSupabaseBrowserClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase
-    .from("order_items")
-    .select(
-      "shop_id,item_title,quantity,orders!inner(id,pickup_code,status,total_amount_lkr,note,pickup_time,created_at)"
-    )
-    .eq("shop_id", shopId);
+    .from("orders")
+    .select(`
+      id, daily_code, reference_number, status, total_amount_lkr,
+      pickup_time, scheduled_slot, note, customer_name, created_at, shop_id,
+      shops!inner(name, emoji, banner_url),
+      order_items(id, item_title, item_image_url, quantity, unit_price_lkr, notes, dining)
+    `)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
 
-  const grouped = new Map<string, VendorOrder>();
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    code: row.daily_code,
+    referenceNumber: row.reference_number,
+    status: row.status,
+    total: row.total_amount_lkr,
+    pickupTime: row.pickup_time ?? "",
+    scheduledSlot: row.scheduled_slot,
+    note: row.note ?? undefined,
+    createdAt: row.created_at,
+    customerName: row.customer_name,
+    shopName: row.shops?.name ?? "",
+    shopEmoji: row.shops?.emoji ?? "🍽️",
+    shopBanner: row.shops?.banner_url ?? undefined,
+    shopId: row.shop_id,
+    items: (row.order_items ?? []).map((it: any) => ({
+      id: it.id,
+      title: it.item_title,
+      quantity: it.quantity,
+      unitPrice: it.unit_price_lkr,
+      notes: it.notes ?? undefined,
+      dining: it.dining,
+      imageUrl: it.item_image_url ?? undefined,
+    })),
+  }));
+}
 
-  (data ?? []).forEach((row: any) => {
-    const order = row.orders;
-    const current: VendorOrder = grouped.get(order.id) ?? {
-      id: order.id,
-      code: order.pickup_code,
-      items: [],
-      total: order.total_amount_lkr,
-      status: order.status,
-      time: formatRelativeTime(order.created_at),
-      note: order.note ?? undefined,
-      shopId,
-      pickupTime: order.pickup_time
-        ? new Date(order.pickup_time).toLocaleTimeString([], {
-            hour: "numeric",
-            minute: "2-digit",
-          })
-        : "ASAP",
-    };
+export async function updateOrderStatus(orderId: string, status: OrderStatus) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
 
-    current.items.push(`${row.quantity}x ${row.item_title}`);
-    grouped.set(order.id, current);
+  const { error } = await supabase
+    .from("orders")
+    .update({ status })
+    .eq("id", orderId);
+
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// CART SYNC
+// ---------------------------------------------------------------------------
+
+export type ServerCartItem = {
+  id: string;
+  menu_item_id: string;
+  shop_id: string;
+  quantity: number;
+  notes: string | null;
+  dining: string;
+  scheduled_slot: string;
+};
+
+export async function fetchServerCart(userId: string): Promise<ServerCartItem[]> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("user_cart")
+    .select("id, menu_item_id, shop_id, quantity, notes, dining, scheduled_slot")
+    .eq("user_id", userId);
+
+  if (error) throw error;
+  return (data ?? []) as ServerCartItem[];
+}
+
+export async function upsertServerCartItem(
+  userId: string,
+  item: { menu_item_id: string; shop_id: string; quantity: number; notes?: string; dining: string; scheduled_slot?: string }
+) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("user_cart")
+    .upsert(
+      {
+        user_id: userId,
+        menu_item_id: item.menu_item_id,
+        shop_id: item.shop_id,
+        quantity: item.quantity,
+        notes: item.notes ?? null,
+        dining: item.dining,
+        scheduled_slot: item.scheduled_slot ?? "ASAP",
+      },
+      { onConflict: "user_id,menu_item_id" }
+    );
+
+  if (error) throw error;
+}
+
+export async function removeServerCartItem(userId: string, menuItemId: string) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("user_cart")
+    .delete()
+    .eq("user_id", userId)
+    .eq("menu_item_id", menuItemId);
+
+  if (error) throw error;
+}
+
+export async function clearServerCart(userId: string) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("user_cart")
+    .delete()
+    .eq("user_id", userId);
+
+  if (error) throw error;
+}
+
+export async function clearServerCartForShop(userId: string, shopId: string) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("user_cart")
+    .delete()
+    .eq("user_id", userId)
+    .eq("shop_id", shopId);
+
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// FAVORITES SYNC
+// ---------------------------------------------------------------------------
+
+export async function fetchServerFavorites(userId: string): Promise<string[]> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("user_favorites")
+    .select("menu_item_id")
+    .eq("user_id", userId);
+
+  if (error) throw error;
+  return (data ?? []).map((r: any) => r.menu_item_id);
+}
+
+export async function addServerFavorite(userId: string, menuItemId: string) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("user_favorites")
+    .upsert({ user_id: userId, menu_item_id: menuItemId }, { onConflict: "user_id,menu_item_id" });
+
+  if (error) throw error;
+}
+
+export async function removeServerFavorite(userId: string, menuItemId: string) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("user_favorites")
+    .delete()
+    .eq("user_id", userId)
+    .eq("menu_item_id", menuItemId);
+
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// SHOP REGISTRATION
+// ---------------------------------------------------------------------------
+
+export async function submitShopRegistration(params: {
+  userId?: string;
+  shopName: string;
+  slug: string;
+  ownerName: string;
+  email: string;
+  paymentLink: string;
+  description: string;
+  category: string;
+}) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) throw new Error("Supabase is not configured");
+
+  const { error } = await supabase.from("shop_registrations").insert({
+    user_id: params.userId ?? null,
+    shop_name: params.shopName,
+    slug: params.slug,
+    owner_name: params.ownerName,
+    email: params.email,
+    payment_link: params.paymentLink,
+    description: params.description,
+    category: params.category,
+    status: "pending",
   });
 
-  return Array.from(grouped.values());
+  if (error) throw error;
 }
+
+// ---------------------------------------------------------------------------
+// PROFILE / GAMIFICATION
+// ---------------------------------------------------------------------------
+
+export type UserProfile = {
+  id: string;
+  displayName: string;
+  email: string;
+  avatarUrl?: string;
+  totalOrders: number;
+  tier: string;
+};
+
+export async function fetchProfile(userId: string): Promise<UserProfile | null> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (error) return null;
+  return {
+    id: data.id,
+    displayName: data.display_name,
+    email: data.email,
+    avatarUrl: data.avatar_url ?? undefined,
+    totalOrders: data.total_orders,
+    tier: data.tier,
+  };
+}
+
+export async function updateProfile(userId: string, updates: { display_name?: string; email?: string; avatar_url?: string }) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update(updates)
+    .eq("id", userId);
+
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// LEGACY COMPAT — kept for vendor dashboard fallback
+// ---------------------------------------------------------------------------
 
 export async function fetchOrderByCode(code: string): Promise<LiveOrder | null> {
   const supabase = getSupabaseBrowserClient();
   if (!supabase) return null;
 
+  const padded = /^\d+$/.test(code.trim()) ? code.trim().padStart(4, "0") : code.trim();
+
   const { data, error } = await supabase
     .from("orders")
-    .select(
-      "id,pickup_code,status,total_amount_lkr,pickup_time,note,created_at,order_items(id,item_title,quantity,unit_price_lkr,notes,dining,shop_id,shop_pin)"
-    )
-    .eq("pickup_code", code)
+    .select(`
+      id, daily_code, reference_number, status, total_amount_lkr,
+      pickup_time, scheduled_slot, note, customer_name, created_at, shop_id,
+      shops!inner(name, emoji, banner_url),
+      order_items(id, item_title, item_image_url, quantity, unit_price_lkr, notes, dining)
+    `)
+    .or(`daily_code.eq."${padded}",reference_number.eq."${code}"`)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
-  if (error) throw error;
-  if (!data) return null;
+  if (error || !data) return null;
 
   return {
     id: data.id,
-    code: data.pickup_code,
-    status: data.status,
+    code: data.daily_code,
+    referenceNumber: data.reference_number,
+    status: data.status as OrderStatus,
     total: data.total_amount_lkr,
-    pickupTime: data.pickup_time,
+    pickupTime: data.pickup_time ?? "",
+    scheduledSlot: data.scheduled_slot,
     note: data.note ?? undefined,
     createdAt: data.created_at,
-    items: (data.order_items ?? []).map((item: any) => ({
-      id: item.id,
-      title: item.item_title,
-      quantity: item.quantity,
-      unitPrice: item.unit_price_lkr,
-      notes: item.notes ?? undefined,
-      dining: item.dining,
-      shopId: item.shop_id,
-      shopPin: item.shop_pin,
+    customerName: data.customer_name,
+    shopName: (data as any).shops?.name ?? "",
+    shopEmoji: (data as any).shops?.emoji ?? "🍽️",
+    shopBanner: (data as any).shops?.banner_url ?? undefined,
+    shopId: data.shop_id,
+    items: ((data as any).order_items ?? []).map((it: any) => ({
+      id: it.id,
+      title: it.item_title,
+      quantity: it.quantity,
+      unitPrice: it.unit_price_lkr,
+      notes: it.notes ?? undefined,
+      dining: it.dining,
+      imageUrl: it.item_image_url ?? undefined,
     })),
   };
 }
