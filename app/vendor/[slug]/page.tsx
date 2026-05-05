@@ -20,10 +20,11 @@ import {
   useUpdateOrderStatus, 
   useVendorOrders, 
   useVendorSearch,
-  useShop,
-  useShopMenuItems
+  useShopMenuItems,
+  useSupabaseUser,
+  useVendorShop
 } from "@/lib/supabase/hooks";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useSignOut } from "@/lib/supabase/useSignOut";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,8 +36,10 @@ type Tab = "orders" | "menu" | "analytics" | "settings";
 export default function VendorDashboard() {
   const params = useParams();
   const slug = params?.slug as string;
-  const { data: shop } = useShop(slug);
+  const { data: user, isLoading: userLoading } = useSupabaseUser();
+  const { data: shop, isLoading: shopLoading } = useVendorShop(slug, user?.id);
   const { data: menuItems = [] } = useShopMenuItems(shop?.id);
+  const { signOut, isSigningOut } = useSignOut("/vendor/login");
   
   const [tab, setTab] = useState<Tab>("orders");
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,12 +97,42 @@ export default function VendorDashboard() {
     }
   };
 
-  if (!shop) {
+  if (userLoading || shopLoading) {
     return (
       <div className="min-h-screen grid place-items-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
           <p className="text-muted-foreground animate-pulse">Loading vendor portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background px-4">
+        <div className="max-w-md rounded-3xl border border-border bg-card p-8 text-center">
+          <h1 className="text-2xl font-bold tracking-tight">Vendor sign in required</h1>
+          <p className="text-muted-foreground mt-3">Use the Google account approved for this shop.</p>
+          <Link href="/vendor/login" className="pill bg-foreground text-background px-5 py-3 inline-flex mt-6">
+            Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!shop) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background px-4">
+        <div className="max-w-md rounded-3xl border border-border bg-card p-8 text-center">
+          <h1 className="text-2xl font-bold tracking-tight">No approved access</h1>
+          <p className="text-muted-foreground mt-3">
+            This shop is not approved for your Google account, or the shop does not exist.
+          </p>
+          <Link href="/vendor" className="pill bg-foreground text-background px-5 py-3 inline-flex mt-6">
+            View my shops
+          </Link>
         </div>
       </div>
     );
@@ -146,8 +179,8 @@ export default function VendorDashboard() {
           ))}
         </nav>
         <div className="p-6 border-t border-border">
-          <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors">
-            <Power className="w-3 h-3" /> Sign out
+          <button onClick={signOut} disabled={isSigningOut} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50">
+            <Power className="w-3 h-3" /> {isSigningOut ? "Signing out..." : "Sign out"}
           </button>
         </div>
       </aside>
@@ -162,8 +195,19 @@ export default function VendorDashboard() {
                <div className="text-xl">{shop.emoji}</div>
                <span className="font-bold text-sm truncate">{shop.name}</span>
             </div>
-            <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${shop.isOpen ? "bg-success/10 text-success border border-success/20" : "bg-muted text-muted-foreground"}`}>
-              {shop.isOpen ? "Accepting Orders" : "Closed"}
+            <div className="flex items-center gap-2">
+              <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${shop.isOpen ? "bg-success/10 text-success border border-success/20" : "bg-muted text-muted-foreground"}`}>
+                {shop.isOpen ? "Accepting Orders" : "Closed"}
+              </div>
+              <button
+                onClick={signOut}
+                disabled={isSigningOut}
+                className="w-8 h-8 rounded-full bg-secondary grid place-items-center text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                aria-label="Sign out"
+                title="Sign out"
+              >
+                <Power className="w-4 h-4" />
+              </button>
             </div>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">

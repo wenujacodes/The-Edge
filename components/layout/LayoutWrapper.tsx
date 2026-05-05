@@ -12,6 +12,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   
   // Hide global navigation on login and vendor dashboard pages
   const isLoginPage = pathname === "/login";
+  const isSignupPage = pathname === "/signup";
+  const isRegistrationPage = pathname === "/shop-registration";
   const isVendorPage = pathname.startsWith("/vendor");
   const isAuthPage = pathname === "/auth" || pathname.startsWith("/auth/");
   
@@ -29,17 +31,17 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user && !isLoginPage && !isVendorPage && !isAuthPage) {
-        router.replace("/auth");
+      if (!user && !isLoginPage && !isSignupPage && !isRegistrationPage && !isVendorPage && !isAuthPage) {
+        router.replace("/login");
       } else {
         setLoading(false);
       }
     };
 
     checkAuth();
-  }, [pathname, isLoginPage, isVendorPage, isAuthPage, router]);
+  }, [pathname, router, isLoginPage, isSignupPage, isRegistrationPage, isVendorPage, isAuthPage]);
   
-  const hideNav = isLoginPage || isVendorPage || isAuthPage;
+  const hideNav = isLoginPage || isSignupPage || isRegistrationPage || isVendorPage || isAuthPage;
 
   if (loading && !hideNav) {
     return (

@@ -13,7 +13,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useSupabaseUser, useProfile, useUserOrders } from "@/lib/supabase/hooks";
 import { updateProfile } from "@/lib/supabase/data";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useSignOut } from "@/lib/supabase/useSignOut";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const { data: user } = useSupabaseUser();
   const { data: profile, refetch: refetchProfile } = useProfile(user?.id);
   const { data: orders = [] } = useUserOrders(user?.id);
+  const { signOut, isSigningOut } = useSignOut("/auth");
   
   const [tempName, setTempName] = React.useState("");
   const [isEditingName, setIsEditingName] = React.useState(false);
@@ -235,15 +236,12 @@ export default function ProfilePage() {
             </section>
 
             <button 
-              onClick={async () => {
-                const supabase = getSupabaseBrowserClient();
-                await supabase?.auth.signOut();
-                window.location.href = "/auth";
-              }}
+              onClick={signOut}
+              disabled={isSigningOut}
               className="w-full flex items-center justify-center gap-2 py-5 text-destructive font-bold hover:bg-destructive/5 rounded-[2.5rem] transition-smooth border border-transparent hover:border-destructive/10"
             >
               <LogOut className="w-5 h-5" />
-              Sign Out
+              {isSigningOut ? "Signing Out..." : "Sign Out"}
             </button>
           </div>
         </div>

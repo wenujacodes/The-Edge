@@ -24,6 +24,8 @@ type ShopRow = {
   categories: string[] | null;
   payment_link: string | null;
   letter_code: string | null;
+  is_approved?: boolean;
+  status?: string;
   available_time_slots: Record<string, string[]> | null;
 };
 
@@ -200,10 +202,47 @@ export async function fetchShopBySlug(slug: string): Promise<Shop | null> {
     .from("shops")
     .select("*")
     .eq("slug", slug)
-    .single();
+    .eq("is_approved", true)
+    .eq("status", "approved")
+    .maybeSingle();
 
   if (error) throw error;
+  if (!data) return null;
   return mapShop(data as ShopRow);
+}
+
+export async function fetchVendorShopBySlug(slug: string, userId: string): Promise<Shop | null> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("shops")
+    .select("*")
+    .eq("slug", slug)
+    .eq("owner_id", userId)
+    .eq("is_approved", true)
+    .eq("status", "approved")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+  return mapShop(data as ShopRow);
+}
+
+export async function fetchMyApprovedShops(userId: string): Promise<Shop[]> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("shops")
+    .select("*")
+    .eq("owner_id", userId)
+    .eq("is_approved", true)
+    .eq("status", "approved")
+    .order("name", { ascending: true });
+
+  if (error) throw error;
+  return ((data ?? []) as ShopRow[]).map(mapShop);
 }
 
 export async function fetchShopById(id: string): Promise<Shop | null> {
@@ -264,31 +303,26 @@ export type CreateOrderResult = {
 };
 
 export async function createOrder(params: CreateOrderParams): Promise<CreateOrderResult> {
-  const supabase = getSupabaseBrowserClient();
-  if (!supabase) throw new Error("Supabase is not configured");
-
-  const { data, error } = await supabase.rpc("fn_create_order", {
-    p_user_id: params.userId,
-    p_shop_id: params.shopId,
-    p_total: params.total,
-    p_customer_name: params.customerName,
-    p_slot: params.scheduledSlot ?? "ASAP",
-    p_note: params.note ?? null,
-    p_items: params.items, // Pass as native array, Supabase handles JSON conversion
+  const response = await fetch("/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      shopId: params.shopId,
+      total: params.total,
+      customerName: params.customerName,
+      scheduledSlot: params.scheduledSlot ?? "ASAP",
+      note: params.note ?? null,
+      items: params.items,
+    }),
   });
 
-  if (error) throw error;
-  
-  // The RPC returns a string (reference number), but we need to match the result type
-  // Wait, I should update the RPC to return the full object or handle it here.
-  // Actually, the previous implementation expected an object {order_id, daily_code, reference_number}.
-  // Let me check what the SQL returns.
-  
-  return {
-    order_id: "", // RPC currently only returns reference_number
-    daily_code: (data as string).split(" ").pop() || "",
-    reference_number: data as string
-  };
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to create order");
+  }
+
+  return data as CreateOrderResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -622,7 +656,7 @@ export async function removeServerFavorite(userId: string, menuItemId: string) {
 // ---------------------------------------------------------------------------
 
 export async function submitShopRegistration(params: {
-  userId?: string;
+  userId: string;
   shopName: string;
   slug: string;
   ownerName: string;
@@ -634,8 +668,9 @@ export async function submitShopRegistration(params: {
   const supabase = getSupabaseBrowserClient();
   if (!supabase) throw new Error("Supabase is not configured");
 
+  console.log("Submitting shop registration for:", params.shopName);
   const { error } = await supabase.from("shop_registrations").insert({
-    user_id: params.userId ?? null,
+    user_id: params.userId,
     shop_name: params.shopName,
     slug: params.slug,
     owner_name: params.ownerName,
@@ -644,9 +679,27 @@ export async function submitShopRegistration(params: {
     description: params.description,
     category: params.category,
     status: "pending",
-  });
+  }).select();
+
+  if (error) {
+    console.error("Supabase registration error:", error);
+    throw error;
+  }
+  console.log("Shop registration submitted successfully");
+}
+
+export async function fetchShopRegistrationEnabled(): Promise<boolean> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return false;
+
+  const { data, error } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", "shop_registration_enabled")
+    .maybeSingle();
 
   if (error) throw error;
+  return data?.value === true || data?.value === "true";
 }
 
 // ---------------------------------------------------------------------------

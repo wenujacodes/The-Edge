@@ -10,10 +10,10 @@ export const Footer = () => (
         <span>· Campus food, sorted.</span>
       </div>
       <div className="flex gap-5">
-        <Link href="/vendor/rocksweats" className="hover:text-foreground focus-dashed transition-smooth">
+        <Link href="/vendor/login" className="hover:text-foreground focus-dashed transition-smooth">
           Vendor login
         </Link>
-        <Link href="/shopregister" className="hover:text-foreground focus-dashed transition-smooth">
+        <Link href="/shop-registration" className="hover:text-foreground focus-dashed transition-smooth">
           Register your shop
         </Link>
       </div>

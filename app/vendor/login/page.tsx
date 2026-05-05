@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, ArrowRight, Briefcase, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { Briefcase, LayoutDashboard, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 export default function VendorLoginPage() {
-  const [email, setEmail] = useState("");
-
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row overflow-hidden selection:bg-primary selection:text-primary-foreground">
       {/* 
@@ -50,32 +48,11 @@ export default function VendorLoginPage() {
               </div>
 
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="label-mono block text-[10px]">Vendor Email Address</label>
-                  <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                    <input
-                      id="email"
-                      type="email"
-                      placeholder="vendor@university.edu"
-                      className="w-full h-14 pl-12 pr-4 rounded-2xl bg-secondary/50 dark:bg-white/5 border border-transparent focus:border-primary/20 focus:bg-background transition-all text-lg outline-none"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <button className="w-full h-14 bg-foreground text-background font-bold rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] transform group shadow-xl shadow-foreground/5 overflow-hidden relative">
-                  <span className="relative z-10 flex items-center gap-2 font-semibold">
-                    Access Dashboard
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                </button>
+                <GoogleSignInButton callbackNextPath="/vendor" mode="login" />
 
                 <div className="pt-2 flex items-center gap-2 text-xs text-muted-foreground">
                   <ShieldCheck className="w-4 h-4 text-primary" />
-                  <span>Secure magic link authentication for your protection.</span>
+                  <span>Only approved shop owners can access the vendor dashboard.</span>
                 </div>
               </div>
             </div>

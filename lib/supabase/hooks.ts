@@ -9,12 +9,15 @@ import {
   fetchMenuItemsByShop,
   fetchOrderByCode,
   fetchProfile,
+  fetchMyApprovedShops,
   fetchServerFavorites,
   addServerFavorite,
   removeServerFavorite,
+  fetchShopRegistrationEnabled,
   fetchShopById,
   fetchShopBySlug,
   fetchShops,
+  fetchVendorShopBySlug,
   fetchUserOrders,
   fetchVendorOrders,
   searchVendorOrders,
@@ -54,6 +57,29 @@ export function useShop(slug: string) {
     queryKey: ["shop", slug],
     queryFn: () => fetchShopBySlug(slug),
     enabled: Boolean(slug),
+  });
+}
+
+export function useVendorShop(slug: string, userId?: string) {
+  return useQuery({
+    queryKey: ["vendor-shop", slug, userId],
+    queryFn: () => fetchVendorShopBySlug(slug, userId!),
+    enabled: Boolean(slug) && Boolean(userId),
+  });
+}
+
+export function useMyApprovedShops(userId?: string) {
+  return useQuery({
+    queryKey: ["my-approved-shops", userId],
+    queryFn: () => fetchMyApprovedShops(userId!),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useShopRegistrationEnabled() {
+  return useQuery({
+    queryKey: ["shop-registration-enabled"],
+    queryFn: fetchShopRegistrationEnabled,
   });
 }
 
