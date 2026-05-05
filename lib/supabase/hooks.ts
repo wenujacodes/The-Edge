@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createOrder,
@@ -304,14 +304,7 @@ export function useSupabaseUser() {
 // DEBOUNCED SEARCH HELPER
 // ---------------------------------------------------------------------------
 
-export function useDebouncedValue(value: string, delay: number = 300): string {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const callbackRef = useRef<((v: string) => void) | null>(null);
-
-  const setDebouncedValue = useCallback((v: string) => {
-    if (callbackRef.current) callbackRef.current(v);
-  }, []);
-
+export function useDebouncedValue(value: string): string {
   // Simple implementation: return the value directly for SSR compat
   // The actual debouncing happens in the component that uses this
   return value;

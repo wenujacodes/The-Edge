@@ -49,6 +49,36 @@ type MenuItemRow = {
   item_time_slots: Record<string, string[]> | null;
 };
 
+type OrderItemRow = {
+  id: string;
+  item_title: string;
+  item_image_url: string | null;
+  quantity: number;
+  unit_price_lkr: number;
+  notes: string | null;
+  dining: string;
+};
+
+type OrderWithItemsRow = {
+  id: string;
+  daily_code: string;
+  reference_number: string;
+  status: OrderStatus;
+  total_amount_lkr: number;
+  pickup_time: string | null;
+  scheduled_slot: string;
+  note: string | null;
+  customer_name: string;
+  created_at: string;
+  shop_id: string;
+  order_items: OrderItemRow[];
+  shops?: {
+    name: string;
+    emoji: string | null;
+    banner_url: string | null;
+  };
+};
+
 export type VendorOrder = {
   id: string;
   code: string;
@@ -373,12 +403,12 @@ export async function fetchVendorOrders(
 
   if (error) throw error;
 
-  return (data ?? []).map((row: any) => ({
+  return ((data ?? []) as unknown as OrderWithItemsRow[]).map((row) => ({
     id: row.id,
     code: row.daily_code,
     referenceNumber: row.reference_number,
-    items: (row.order_items ?? []).map((it: any) => `${it.quantity}× ${it.item_title}`),
-    itemDetails: (row.order_items ?? []).map((it: any) => ({
+    items: (row.order_items ?? []).map((it) => `${it.quantity}× ${it.item_title}`),
+    itemDetails: (row.order_items ?? []).map((it) => ({
       title: it.item_title,
       quantity: it.quantity,
       unitPrice: it.unit_price_lkr,
@@ -437,12 +467,12 @@ export async function searchVendorOrders(
 
   if (error) throw error;
 
-  return (data ?? []).map((row: any) => ({
+  return ((data ?? []) as unknown as OrderWithItemsRow[]).map((row) => ({
     id: row.id,
     code: row.daily_code,
     referenceNumber: row.reference_number,
-    items: (row.order_items ?? []).map((it: any) => `${it.quantity}× ${it.item_title}`),
-    itemDetails: (row.order_items ?? []).map((it: any) => ({
+    items: (row.order_items ?? []).map((it) => `${it.quantity}× ${it.item_title}`),
+    itemDetails: (row.order_items ?? []).map((it) => ({
       title: it.item_title,
       quantity: it.quantity,
       unitPrice: it.unit_price_lkr,
@@ -481,7 +511,7 @@ export async function fetchUserOrders(userId: string): Promise<LiveOrder[]> {
 
   if (error) throw error;
 
-  return (data ?? []).map((row: any) => ({
+  return ((data ?? []) as unknown as OrderWithItemsRow[]).map((row) => ({
     id: row.id,
     code: row.daily_code,
     referenceNumber: row.reference_number,
@@ -496,7 +526,7 @@ export async function fetchUserOrders(userId: string): Promise<LiveOrder[]> {
     shopEmoji: row.shops?.emoji ?? "🍽️",
     shopBanner: row.shops?.banner_url ?? undefined,
     shopId: row.shop_id,
-    items: (row.order_items ?? []).map((it: any) => ({
+    items: (row.order_items ?? []).map((it) => ({
       id: it.id,
       title: it.item_title,
       quantity: it.quantity,
@@ -784,11 +814,11 @@ export async function fetchOrderByCode(code: string): Promise<LiveOrder | null> 
     note: data.note ?? undefined,
     createdAt: data.created_at,
     customerName: data.customer_name,
-    shopName: (data as any).shops?.name ?? "",
-    shopEmoji: (data as any).shops?.emoji ?? "🍽️",
-    shopBanner: (data as any).shops?.banner_url ?? undefined,
+    shopName: (data as unknown as OrderWithItemsRow).shops?.name ?? "",
+    shopEmoji: (data as unknown as OrderWithItemsRow).shops?.emoji ?? "🍽️",
+    shopBanner: (data as unknown as OrderWithItemsRow).shops?.banner_url ?? undefined,
     shopId: data.shop_id,
-    items: ((data as any).order_items ?? []).map((it: any) => ({
+    items: ((data as unknown as OrderWithItemsRow).order_items ?? []).map((it) => ({
       id: it.id,
       title: it.item_title,
       quantity: it.quantity,
