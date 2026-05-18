@@ -6,6 +6,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+
 ## Project Structure & Module Organization
 
 This is a Next.js App Router application. Route files live in `app/`, with pages such as `app/browse/page.tsx`, dynamic routes like `app/shop/[slug]/page.tsx`, and API/auth handlers under `app/auth/`. Shared UI belongs in `components/`, grouped by purpose: `layout`, `shop`, `ui`, and `auth`. Utilities live in `lib/`; Supabase helpers are in `lib/supabase/`. Zustand stores are in `store/`. Static PWA assets, icons, and images are in `public/`. Database schema reference lives in `supabase/schema.sql`.
