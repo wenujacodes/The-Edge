@@ -5,14 +5,13 @@ import Link from "next/link";
 import { Footer } from "@/components/layout/Footer";
 import { FoodCard } from "@/components/shop/FoodCard";
 import { useCart } from "@/store/cart";
-import { useAllMenuItems, useServerFavorites, useSupabaseUser } from "@/lib/supabase/hooks";
+import { useAllMenuItems } from "@/lib/supabase/hooks";
 
 export default function FavoritesPage() {
-  const { data: user } = useSupabaseUser();
-  const { data: serverFavorites = [] } = useServerFavorites(user?.id);
+  const { favorites } = useCart();
   const { data: allItems = [] } = useAllMenuItems();
   
-  const favItems = allItems.filter((i) => serverFavorites.includes(i.id));
+  const favItems = allItems.filter((i) => favorites.includes(i.id));
 
   return (
     <div className="min-h-screen bg-background">

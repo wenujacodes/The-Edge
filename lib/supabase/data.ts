@@ -796,7 +796,7 @@ export async function fetchOrderByCode(code: string): Promise<LiveOrder | null> 
       shops!inner(name, emoji, banner_url),
       order_items(id, item_title, item_image_url, quantity, unit_price_lkr, notes, dining)
     `)
-    .or(`daily_code.eq."${padded}",reference_number.eq."${code}"`)
+    .or(`daily_code.eq.${padded},reference_number.eq.${code}`)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

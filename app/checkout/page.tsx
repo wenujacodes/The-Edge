@@ -61,9 +61,9 @@ export default function CheckoutPage() {
       
       toast.success(`Order confirmed for ${shop.name}! Code: ${result.daily_code}`);
       
-      // If that was the last shop, go to orders
+      // If that was the last shop, go to the receipt
       if (shopIds.length <= 1) {
-        router.push("/orders");
+        router.push(`/order/${encodeURIComponent(result.reference_number)}`);
       }
     } catch (error: unknown) {
       const message =
