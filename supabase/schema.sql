@@ -126,6 +126,7 @@ create table public.user_favorites (
   primary key (user_id, menu_item_id)
 );
 
+
 -- Shop Registrations (applications)
 create table public.shop_registrations (
   id uuid primary key default gen_random_uuid(),
