@@ -6,6 +6,7 @@ import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Header } from "@/components/layout/Header";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -74,6 +75,7 @@ export default function RootLayout({
             {children}
           </LayoutWrapper>
           <Analytics />
+          <SpeedInsights />
         </Providers>
       </body>
     </html>
