@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   keywords: ["The Edge", "NSBM Green University", "NSBM Edge", "NSBM", "NSBM Canteen"],
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon-192.png",
+    icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
   },
   appleWebApp: {
