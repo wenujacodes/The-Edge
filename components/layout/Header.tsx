@@ -73,7 +73,7 @@ export const Header = () => {
               aria-label="Cart"
               className="relative flex w-8 h-8 items-center justify-center text-muted-foreground transition-smooth focus-dashed"
             >
-              <div className="relative w-6 h-6 hover:opacity-70 transition-smooth">
+              <div className="relative w-6 h-6 translate-y-px hover:opacity-70 transition-smooth">
                 <Image src="/icons/cart-black.svg" alt="Cart" fill className="dark:hidden object-contain" />
                 <Image src="/icons/cart-white.svg" alt="Cart" fill className="hidden dark:block object-contain" />
               </div>

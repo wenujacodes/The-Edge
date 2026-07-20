@@ -8,8 +8,6 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 
-import { Footer } from "@/components/layout/Footer";
-
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -46,7 +44,6 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   }, [pathname, router, isLoginPage, isSignupPage, isRegistrationPage, isVendorPage, isAuthPage]);
   
   const hideNav = isLoginPage || isSignupPage || isRegistrationPage || isVendorPage || isAuthPage;
-  const showFooter = pathname === "/" || pathname === "/profile";
 
   if (loading && !hideNav) {
     return <div className="flex-1 bg-background" />;
@@ -68,7 +65,6 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         <main className="flex-1 flex flex-col">
           {children}
         </main>
-        {showFooter && <Footer />}
       </div>
       <BottomNav />
       <OfflineBanner />

@@ -23,14 +23,19 @@ export default function CartPage() {
     return (
       <div className="flex-1 bg-background flex flex-col">
         <div className="flex-1 container mx-auto px-4 py-20 md:pt-36 text-center">
-          <div className="w-24 h-24 bg-secondary/50 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">🛒</div>
+          <div className="w-24 h-24 bg-secondary/50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="relative w-10 h-10">
+              <Image src="/icons/cart-new-black.svg" alt="" fill className="dark:hidden object-contain" />
+              <Image src="/icons/cart-new-white.svg" alt="" fill className="hidden dark:block object-contain" />
+            </div>
+          </div>
           <h1 className="text-3xl font-bold tracking-tight">Add items to start a cart</h1>
           <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
             Add a few things from the menu to see them here. Each shop prepares your order separately.
           </p>
           <Link
             href="/browse"
-            className="inline-flex mt-8 pill bg-foreground text-background px-10 py-4 font-bold focus-dashed hover:bg-foreground/90 transition-smooth shadow-pop"
+            className="inline-flex mt-8 pill bg-foreground text-background px-6 py-2.5 text-sm font-bold focus-dashed hover:bg-foreground/90 transition-smooth shadow-pop"
           >
             Start shopping
           </Link>

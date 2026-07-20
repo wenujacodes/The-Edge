@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ReceiptText, ArrowRight, Clock, CheckCircle2, RotateCcw } from "lucide-react";
+import { ArrowRight, Clock, CheckCircle2, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
@@ -36,6 +36,7 @@ export default function OrdersPage() {
     () => filteredOrders.reduce((sum, order) => sum + order.total, 0),
     [filteredOrders]
   );
+  const isEmpty = !isLoading && visibleOrders.length === 0;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -72,11 +73,17 @@ export default function OrdersPage() {
 
   return (
     <div className="flex-1 bg-background flex flex-col">
-      <main className="flex-1 container mx-auto px-4 pt-8 pb-24 md:pb-32 md:pt-28 max-w-3xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Order History</h1>
-          <p className="text-muted-foreground">Track your current and past orders.</p>
-        </div>
+      <main
+        className={`flex-1 container mx-auto px-4 max-w-3xl ${
+          isEmpty ? "py-20 md:pt-36" : "pt-8 pb-24 md:pb-32 md:pt-28"
+        }`}
+      >
+        {(!isLoading && visibleOrders.length > 0 || isLoading) && (
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Order History</h1>
+            <p className="text-muted-foreground">Track your current and past orders.</p>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="py-24 flex justify-center">
@@ -212,9 +219,12 @@ export default function OrdersPage() {
             </section>
           </div>
         ) : (
-          <div className="text-center py-20 md:pt-24">
+          <div className="text-center">
             <div className="w-24 h-24 bg-secondary/50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ReceiptText className="w-10 h-10 text-muted-foreground" />
+              <div className="relative w-10 h-10">
+                <Image src="/icons/bill-line-black.svg" alt="" fill className="dark:hidden object-contain" />
+                <Image src="/icons/bill-line-white.svg" alt="" fill className="hidden dark:block object-contain" />
+              </div>
             </div>
             <h2 className="text-3xl font-bold tracking-tight">No orders found</h2>
             <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
@@ -222,7 +232,7 @@ export default function OrdersPage() {
             </p>
             <Link
               href="/browse"
-              className="inline-flex mt-8 pill bg-foreground text-background px-10 py-4 font-bold focus-dashed hover:bg-foreground/90 transition-smooth shadow-pop"
+              className="inline-flex mt-8 pill bg-foreground text-background px-6 py-2.5 text-sm font-bold focus-dashed hover:bg-foreground/90 transition-smooth shadow-pop"
             >
               Start shopping
             </Link>
