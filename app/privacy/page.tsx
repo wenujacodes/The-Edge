@@ -1,10 +1,9 @@
 "use client";
 
-import { Footer } from "@/components/layout/Footer";
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex-1 bg-background">
       <main className="container mx-auto max-w-3xl px-4 py-12 md:pt-28">
         <h1 className="mb-8 text-4xl font-bold tracking-tight">Privacy Policy</h1>
 
@@ -44,8 +43,6 @@ export default function PrivacyPage() {
           <p className="pt-8 text-sm italic">Last updated: May 4, 2026</p>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

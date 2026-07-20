@@ -4,7 +4,6 @@ import { useMemo, useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
-import { Footer } from "@/components/layout/Footer";
 import { FoodCard } from "@/components/shop/FoodCard";
 import { useMenuItems, useShops } from "@/lib/supabase/hooks";
 
@@ -113,7 +112,7 @@ function BrowseContent() {
   }, [visibleCount, filtered.length]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex-1 bg-background">
       <main className="container mx-auto px-4 py-8 md:pt-28">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">Browse Menu</h1>
@@ -305,8 +304,6 @@ function BrowseContent() {
             </div>
           </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

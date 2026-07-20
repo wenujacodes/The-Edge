@@ -99,7 +99,7 @@ export default function VendorDashboard() {
 
   if (userLoading || shopLoading) {
     return (
-      <div className="min-h-screen grid place-items-center bg-background">
+      <div className="flex-1 grid place-items-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
           <p className="text-muted-foreground animate-pulse">Loading vendor portal...</p>
@@ -110,7 +110,7 @@ export default function VendorDashboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen grid place-items-center bg-background px-4">
+      <div className="flex-1 grid place-items-center bg-background px-4">
         <div className="max-w-md rounded-3xl border border-border bg-card p-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight">Vendor sign in required</h1>
           <p className="text-muted-foreground mt-3">Use the Google account approved for this shop.</p>
@@ -124,7 +124,7 @@ export default function VendorDashboard() {
 
   if (!shop) {
     return (
-      <div className="min-h-screen grid place-items-center bg-background px-4">
+      <div className="flex-1 grid place-items-center bg-background px-4">
         <div className="max-w-md rounded-3xl border border-border bg-card p-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight">No approved access</h1>
           <p className="text-muted-foreground mt-3">
@@ -139,7 +139,7 @@ export default function VendorDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-secondary/20 flex overflow-hidden">
+    <div className="flex-1 bg-secondary/20 flex overflow-hidden">
       {/* ── SIDEBAR (Desktop) ── */}
       <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-background h-screen z-30">
         <div className="p-6 border-b border-border bg-card/50">

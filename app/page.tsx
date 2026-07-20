@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Footer } from "@/components/layout/Footer";
 import { PWABanner } from "@/components/layout/PWABanner";
 import { ShopCard } from "@/components/shop/ShopCard";
 import { FoodCard } from "@/components/shop/FoodCard";
@@ -41,7 +40,7 @@ export default function HomePage() {
   const hasFavorites = favouriteItems.length > 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex-1 bg-background">
       {/* ── HERO ── */}
       <section className="relative overflow-hidden pt-6 pb-2 md:pt-28 md:pb-8 bg-gradient-to-b from-[#eaf8e3] to-background dark:from-black dark:to-background">
         <div className="container mx-auto px-4">
@@ -175,8 +174,6 @@ export default function HomePage() {
           </div>
         </section>
       )}
-
-      <Footer />
       <PWABanner />
     </div>
   );

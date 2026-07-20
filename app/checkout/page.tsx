@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, ChevronRight, X, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/store/cart";
 import { useProfile } from "@/store/profile";
 import { useCreateOrder, useShops, useSupabaseUser } from "@/lib/supabase/hooks";
@@ -76,7 +75,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <div className="flex-1 bg-background flex flex-col items-center justify-center p-4">
         <div className="text-center space-y-4">
           <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="w-10 h-10 text-muted-foreground" />
@@ -92,7 +91,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="flex-1 bg-background pb-24">
       <div className="container mx-auto px-4 py-8 md:pt-28 max-w-2xl">
         <div className="label-mono mb-2 text-primary">● Sequential Checkout</div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-8">Process Payments</h1>
@@ -251,8 +250,6 @@ export default function CheckoutPage() {
           </div>
         )}
       </AnimatePresence>
-
-      <Footer />
     </div>
   );
 }

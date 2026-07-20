@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, Trash2, ArrowRight, Clock, AlertCircle } from "lucide-react";
-import { Footer } from "@/components/layout/Footer";
 import { useCart, CartEntry } from "@/store/cart";
 import { useShops } from "@/lib/supabase/hooks";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex-1 bg-background flex flex-col">
         <div className="flex-1 container mx-auto px-4 py-20 md:pt-36 text-center">
           <div className="w-24 h-24 bg-secondary/50 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">🛒</div>
           <h1 className="text-3xl font-bold tracking-tight">Your cart is empty</h1>
@@ -36,13 +35,12 @@ export default function CartPage() {
             Explore Menu
           </Link>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex-1 bg-background flex flex-col">
       <div className="flex-1 container mx-auto px-4 py-8 md:pt-28 grid lg:grid-cols-[1fr_380px] gap-12">
         {/* Left: cart items */}
         <div className="min-w-0">
@@ -242,7 +240,6 @@ export default function CartPage() {
           </div>
         </aside>
       </div>
-      <Footer />
     </div>
   );
 }

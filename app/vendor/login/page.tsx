@@ -8,7 +8,7 @@ import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 export default function VendorLoginPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col lg:flex-row overflow-hidden selection:bg-primary selection:text-primary-foreground">
+    <div className="flex-1 bg-background flex flex-col lg:flex-row overflow-hidden selection:bg-primary selection:text-primary-foreground">
       {/* 
         Vendor Portal: Side-by-side layout for desktop, single column for mobile/tablet.
         Professional aesthetic with a focus on business management.

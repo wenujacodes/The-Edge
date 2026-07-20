@@ -1,10 +1,9 @@
 "use client";
 
-import { Footer } from "@/components/layout/Footer";
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex-1 bg-background">
       
       <main className="container mx-auto px-4 py-12 md:pt-28 max-w-3xl">
 
@@ -48,8 +47,6 @@ export default function TermsPage() {
           </p>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Check, ChefHat, Bell, ArrowRight, ArrowLeft, RotateCcw, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
-import { Footer } from "@/components/layout/Footer";
 import { ReceiptCard } from "@/components/ui/ReceiptCard";
 import { useLiveOrder, useUserOrders, useSupabaseUser } from "@/lib/supabase/hooks";
 import { useCart } from "@/store/cart";
@@ -133,7 +132,7 @@ export default function OrderStatusPage() {
 
   if (isLiveLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex-1 bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading order details...</div>
       </div>
     );
@@ -141,7 +140,7 @@ export default function OrderStatusPage() {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex-1 bg-background">
         <div className="container mx-auto px-4 py-20 md:pt-36 text-center">
           <div className="text-6xl mb-4">📋</div>
           <p className="text-muted-foreground">No active order found.</p>
@@ -149,7 +148,6 @@ export default function OrderStatusPage() {
             ← Back home
           </Link>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -176,7 +174,7 @@ export default function OrderStatusPage() {
   const hasNext = currentIndex < allOrders.length - 1;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex-1 bg-background">
       <div
         ref={containerRef}
         className="container mx-auto px-4 py-8 md:pt-28 max-w-2xl"
@@ -284,7 +282,6 @@ export default function OrderStatusPage() {
           </Link>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

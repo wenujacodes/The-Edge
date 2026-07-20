@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AlertCircle } from "lucide-react";
-import { Footer } from "@/components/layout/Footer";
 import { FoodCard } from "@/components/shop/FoodCard";
 import { useCart } from "@/store/cart";
 import { useShop, useShopMenuItems } from "@/lib/supabase/hooks";
@@ -30,7 +29,7 @@ export default function ShopPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex-1 bg-background">
         <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">
           Loading shop...
         </div>
@@ -40,7 +39,7 @@ export default function ShopPage() {
 
   if (!shop) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex-1 bg-background">
         <div className="container mx-auto px-4 py-20 text-center">
           <div className="text-6xl mb-4">🔍</div>
           <h1 className="text-2xl font-bold">Shop not found</h1>
@@ -58,7 +57,7 @@ export default function ShopPage() {
   const visible = activeCat ? items.filter((i) => i.category === activeCat) : items;
 
   return (
-    <div className="min-h-screen bg-background pb-8">
+    <div className="flex-1 bg-background pb-8">
       {/* Banner */}
       <div className="w-full h-48 sm:h-64 relative bg-secondary border-b border-border">
         {shop.banner ? (
@@ -143,8 +142,6 @@ export default function ShopPage() {
           </div>
         )}
       </div>
-
-      <Footer />
     </div>
   );
 }

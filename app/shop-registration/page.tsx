@@ -5,7 +5,6 @@ import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, Lock, Store, Upload } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Footer } from "@/components/layout/Footer";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useShopRegistrationEnabled, useSupabaseUser } from "@/lib/supabase/hooks";
 import { submitShopRegistration } from "@/lib/supabase/data";
@@ -101,7 +100,7 @@ export default function ShopRegistrationPage() {
 
   if (userLoading || settingsLoading) {
     return (
-      <div className="min-h-screen grid place-items-center bg-background">
+      <div className="flex-1 grid place-items-center bg-background">
         <div className="w-10 h-10 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
       </div>
     );
@@ -109,7 +108,7 @@ export default function ShopRegistrationPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex-1 bg-background">
         <div className="container mx-auto px-4 py-20 md:pt-36 max-w-lg">
           <Link href="/profile" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8">
             <ArrowLeft className="w-4 h-4" /> Back to profile
@@ -127,14 +126,13 @@ export default function ShopRegistrationPage() {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   if (registrationEnabled === false) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex-1 bg-background">
         <div className="container mx-auto px-4 py-20 md:pt-36 max-w-lg text-center">
           <div className="w-20 h-20 rounded-full bg-secondary grid place-items-center mx-auto mb-6">
             <Lock className="w-10 h-10 text-muted-foreground" />
@@ -147,14 +145,13 @@ export default function ShopRegistrationPage() {
             Back to profile
           </Link>
         </div>
-        <Footer />
       </div>
     );
   }
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex-1 bg-background">
         <div className="container mx-auto px-4 py-20 md:pt-36 max-w-lg text-center">
           <div className="w-20 h-20 rounded-full bg-success-soft grid place-items-center mx-auto mb-6">
             <CheckCircle2 className="w-10 h-10 text-success-foreground" />
@@ -180,13 +177,12 @@ export default function ShopRegistrationPage() {
             ))}
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex-1 bg-background">
       <div className="container mx-auto px-4 py-8 md:pt-28 max-w-2xl">
         <Link href="/profile" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to profile
@@ -347,7 +343,6 @@ export default function ShopRegistrationPage() {
           </button>
         </form>
       </div>
-      <Footer />
     </div>
   );
 }

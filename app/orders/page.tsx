@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { ReceiptText, ArrowRight, Clock, CheckCircle2, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
 import { displayReferenceNumber } from "@/lib/mockData";
@@ -69,7 +68,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex-1 bg-background flex flex-col">
       <main className="flex-1 container mx-auto px-4 py-8 md:pt-28 max-w-3xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">Order History</h1>
@@ -243,8 +242,6 @@ export default function OrdersPage() {
           </div>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 }
