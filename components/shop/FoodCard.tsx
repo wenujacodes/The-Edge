@@ -49,12 +49,7 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
             />
           </button>
 
-          {/* Badges */}
-          {item.badge && (
-            <span className="absolute top-3 left-3 pill text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 bg-foreground text-background">
-              {item.badge}
-            </span>
-          )}
+          {/* Badges removed per user request */}
           {!item.isAvailable && (
             <div className="absolute inset-0 bg-background/60 backdrop-blur-sm grid place-items-center">
               <span className="pill bg-muted text-muted-foreground text-xs font-medium px-3 py-1.5">
