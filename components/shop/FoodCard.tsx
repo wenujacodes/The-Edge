@@ -133,6 +133,7 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
                   if (!item.isAvailable) return;
                   if (isInCart) {
                     remove(item.id);
+                    setSelectedQty(1);
                     toast.success(`${item.title} removed from cart`);
                     return;
                   }
