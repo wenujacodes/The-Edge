@@ -10,7 +10,7 @@ import Image from "next/image";
 export function ProfileAvatar({ className = "", iconSize = 20 }: { className?: string, iconSize?: number }) {
   return (
     <div 
-      className={`relative rounded-full flex items-center justify-center bg-secondary profile-avatar overflow-hidden ${className}`}
+      className={`relative flex items-center justify-center profile-avatar overflow-hidden ${className}`}
     >
       <Image
         src="/images/profile-icon-black.png"

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Home, Compass, ShoppingBag, ReceiptText, User } from "lucide-react";
 import { useCart } from "@/store/cart";
@@ -38,12 +39,19 @@ export const BottomNav = () => {
               className="relative flex flex-col items-center justify-center w-full h-full gap-1 transition-smooth active:scale-95"
             >
               <div className="relative">
-                <Icon
-                  className={`w-5 h-5 transition-all ${
-                    isActive ? "text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "text-muted-foreground"
-                  }`}
-                  strokeWidth={isActive ? 2.5 : 2}
-                />
+                {link.label === "Cart" ? (
+                  <div className={`relative w-6 h-6 transition-all ${isActive ? "drop-shadow-[0_0_8px_rgba(34,197,94,0.5)] brightness-150" : ""}`}>
+                    <Image src="/icons/cart-black.svg" alt="Cart" fill className="dark:hidden object-contain" />
+                    <Image src="/icons/cart-white.svg" alt="Cart" fill className="hidden dark:block object-contain" />
+                  </div>
+                ) : (
+                  <Icon
+                    className={`w-5 h-5 transition-all ${
+                      isActive ? "text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "text-muted-foreground"
+                    }`}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                )}
                 {link.badge && mounted && count > 0 && (
                   <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground animate-scale-in">
                     {count}

@@ -206,13 +206,11 @@
   }
 
   .profile-avatar {
-    background-color: hsl(220 14% 90%);
-    color: hsl(220 9% 46%);
+    background-color: transparent;
   }
 
   .dark .profile-avatar {
-    background-color: hsl(222 20% 18%);
-    color: hsl(220 10% 65%);
+    background-color: transparent;
   }
 
   .scrollbar-hide::-webkit-scrollbar { display: none; }

@@ -47,4 +47,3 @@ Do not expose Supabase service-role keys in client code. Keep browser-safe clien
 - **Auth URLs**: Separate routes for `/login` and `/signup` have been implemented.
 - **Vendor Access**: Vendor login is at `/vendor/login` and requires manual whitelisting in Supabase by an admin.
 - **Shop Registration**: New shops apply at `/shop-registration`. Admins approve them via SQL editor (`select private.approve_shop_registration('ID')`). See `README.md` for details.
-- **Hosting**: The project is now hosted on : https://edgeproject-mark-1.vercel.app

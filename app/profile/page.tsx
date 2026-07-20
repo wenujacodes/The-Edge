@@ -88,7 +88,7 @@ export default function ProfilePage() {
               
               <div className="flex flex-col items-center text-center relative z-10">
                 <div className="relative mb-6 group">
-                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white dark:border-background shadow-elevated">
+                  <div className="w-32 h-32 overflow-hidden flex items-center justify-center">
                     <ProfileAvatar className="w-full h-full" iconSize={64} />
                   </div>
                   <div className={`absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-white dark:bg-card border border-border flex items-center justify-center shadow-md ${tierInfo.color}`}>

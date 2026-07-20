@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ShoppingBag, Search, Home, Compass, ReceiptText, User } from "lucide-react";
 import { useCart } from "@/store/cart";
@@ -72,7 +73,10 @@ export const Header = () => {
               id="header-cart-btn"
               className="relative inline-flex items-center gap-2 text-muted-foreground hover:text-primary text-sm font-medium transition-smooth focus-dashed"
             >
-              <ShoppingBag className="w-4 h-4" />
+              <div className="relative w-6 h-6">
+                <Image src="/icons/cart-black.svg" alt="Cart" fill className="dark:hidden object-contain" />
+                <Image src="/icons/cart-white.svg" alt="Cart" fill className="hidden dark:block object-contain" />
+              </div>
               <span>Cart</span>
               {mounted && count > 0 && (
                 <span className="ml-1 inline-grid place-items-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold animate-scale-in">
@@ -82,7 +86,7 @@ export const Header = () => {
             </Link>
             <Link
               href="/profile"
-              className="w-10 h-10 rounded-full overflow-hidden border border-border shadow-sm hover:opacity-80 transition-smooth focus-dashed"
+              className="w-10 h-10 overflow-hidden hover:opacity-80 transition-smooth focus-dashed flex items-center justify-center"
               aria-label="Profile"
             >
               <ProfileAvatar className="w-full h-full" iconSize={20} />
