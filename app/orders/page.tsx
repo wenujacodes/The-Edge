@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ReceiptText, ArrowRight, Clock, CheckCircle2, RotateCcw } from "lucide-react";
+import { ArrowRight, Clock, CheckCircle2, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
@@ -221,7 +221,10 @@ export default function OrdersPage() {
         ) : (
           <div className="text-center">
             <div className="w-24 h-24 bg-secondary/50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ReceiptText className="w-10 h-10 text-muted-foreground" />
+              <div className="relative w-10 h-10">
+                <Image src="/icons/bill-line-black.svg" alt="" fill className="dark:hidden object-contain" />
+                <Image src="/icons/bill-line-white.svg" alt="" fill className="hidden dark:block object-contain" />
+              </div>
             </div>
             <h2 className="text-3xl font-bold tracking-tight">No orders found</h2>
             <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
