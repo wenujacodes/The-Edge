@@ -19,7 +19,7 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
   const { data: shop } = useShopById(item.shopId);
 
   return (
-    <article className="group relative transition-smooth hover:shadow-elevated rounded-3xl">
+    <article className="group relative transition-smooth hover:shadow-elevated rounded-3xl cursor-default">
       <div className="relative rounded-3xl bg-card border border-border overflow-hidden h-full flex flex-col">
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden bg-muted flex-shrink-0">
@@ -81,7 +81,7 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
                 toast.success(`${item.title} added to cart`);
               }}
               disabled={!item.isAvailable}
-              className="w-10 h-10 md:w-8 md:h-8 rounded-full bg-[#3AD07A] dark:bg-[#2DAA63] text-white grid place-items-center hover:scale-105 transition-smooth shadow-sm focus-dashed disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              className="w-10 h-10 md:w-8 md:h-8 rounded-full bg-[#3AD07A] dark:bg-[#2DAA63] text-white grid place-items-center hover:scale-105 transition-smooth shadow-sm focus-dashed disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
             >
               <Plus className="w-6 h-6 md:w-5 md:h-5 stroke-[3px]" />
             </button>
