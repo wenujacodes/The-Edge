@@ -73,7 +73,7 @@ export default function OrdersPage() {
       <main className="flex-1 container mx-auto px-4 py-8 md:pt-28 max-w-3xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">Order History</h1>
-          <p className="text-muted-foreground">Track your current and past campus orders.</p>
+          <p className="text-muted-foreground">Track your current and past orders.</p>
         </div>
 
         {/* Filters */}
