@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ReceiptText, ArrowRight, Clock, CheckCircle2, RotateCcw } from "lucide-react";
+import { ReceiptText, ArrowRight, Clock, CheckCircle2, RotateCcw, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
@@ -15,7 +15,18 @@ export default function OrdersPage() {
   const { data: orders = [], isLoading } = useUserOrders(user?.id);
   const [filter, setFilter] = useState<"all" | "today" | "week" | "month">("today");
   const [visibleCount, setVisibleCount] = useState(5);
+  const [clearedOrderIds, setClearedOrderIds] = useState<Set<string>>(new Set());
   const { add } = useCart();
+
+  useEffect(() => {
+    if (!user?.id) {
+      setClearedOrderIds(new Set());
+      return;
+    }
+
+    const saved = localStorage.getItem(`edge-cleared-orders-${user.id}`);
+    setClearedOrderIds(new Set(saved ? JSON.parse(saved) : []));
+  }, [user?.id]);
 
   const filteredOrders = useMemo(() => {
     const now = new Date();
@@ -24,15 +35,20 @@ export default function OrdersPage() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     return (orders || []).filter((o) => {
+      if (clearedOrderIds.has(o.id)) return false;
       const placed = new Date(o.createdAt);
       if (filter === "today") return placed >= startOfToday;
       if (filter === "week") return placed >= startOfWeek;
       if (filter === "month") return placed >= startOfMonth;
       return true;
     });
-  }, [orders, filter]);
+  }, [orders, filter, clearedOrderIds]);
 
   const visibleOrders = useMemo(() => filteredOrders.slice(0, visibleCount), [filteredOrders, visibleCount]);
+  const totalSpend = useMemo(
+    () => filteredOrders.reduce((sum, order) => sum + order.total, 0),
+    [filteredOrders]
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,6 +83,17 @@ export default function OrdersPage() {
     toast.success("Items added to cart!");
   };
 
+  const handleClearHistory = () => {
+    if (!user?.id || orders.length === 0) return;
+    if (!window.confirm("Clear your order history on this device?")) return;
+
+    const nextCleared = new Set(orders.map((order) => order.id));
+    localStorage.setItem(`edge-cleared-orders-${user.id}`, JSON.stringify([...nextCleared]));
+    setClearedOrderIds(nextCleared);
+    setVisibleCount(5);
+    toast.success("Order history cleared");
+  };
+
   return (
     <div className="flex-1 bg-background flex flex-col">
       <main className="flex-1 container mx-auto px-4 pt-8 pb-24 md:pb-32 md:pt-28 max-w-3xl">
@@ -76,23 +103,35 @@ export default function OrdersPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-4 mb-4">
-          {(["all", "today", "week", "month"] as const).map((f) => (
+        <div className="flex items-start justify-between gap-3 pb-4 mb-4">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            {(["all", "today", "week", "month"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => {
+                  setFilter(f);
+                  setVisibleCount(5);
+                }}
+                className={`pill px-4 py-2 text-sm font-medium transition-smooth capitalize ${
+                  filter === f
+                    ? "bg-foreground text-background"
+                    : "bg-secondary text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                {f === "all" ? "All Orders" : f}
+              </button>
+            ))}
+          </div>
+          {orders.length > 0 && (
             <button
-              key={f}
-              onClick={() => {
-                setFilter(f);
-                setVisibleCount(5);
-              }}
-              className={`pill px-4 py-2 text-sm font-medium transition-smooth capitalize ${
-                filter === f
-                  ? "bg-foreground text-background"
-                  : "bg-secondary text-muted-foreground hover:bg-accent"
-              }`}
+              type="button"
+              onClick={handleClearHistory}
+              className="pill shrink-0 border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-smooth focus-dashed"
             >
-              {f === "all" ? "All Orders" : f}
+              <Trash2 className="w-4 h-4 inline mr-1.5" />
+              Clear
             </button>
-          ))}
+          )}
         </div>
 
         {isLoading ? (
@@ -212,6 +251,23 @@ export default function OrdersPage() {
                 </div>
               </div>
             )}
+
+            <section className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-soft">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-bold tracking-tight">Total spend</h2>
+                  <p className="text-xs text-muted-foreground mt-1 capitalize">
+                    {filter === "all" ? "All orders" : `${filter} orders`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-black tracking-tight">Rs {totalSpend}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
+                    {filteredOrders.length} {filteredOrders.length === 1 ? "order" : "orders"}
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         ) : (
           <div className="text-center py-24 rounded-[2rem] border border-dashed border-border bg-secondary/20">
