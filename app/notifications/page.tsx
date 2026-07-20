@@ -31,6 +31,7 @@ function getDateLabel(value: string) {
 export default function NotificationsPage() {
   const { data: user } = useSupabaseUser();
   const { data: orders = [], isLoading } = useUserOrders(user?.id);
+  const pageClassName = "flex-1 bg-background flex flex-col animate-slide-in-right md:animate-none";
 
   const notifications = useMemo(
     () => orders.filter((order) => notifyingStatuses.has(order.status)),
@@ -53,7 +54,7 @@ export default function NotificationsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 bg-background flex flex-col">
+      <div className={pageClassName}>
         <div className="flex-1 container mx-auto px-4 py-20 md:pt-36 text-center">
           <div className="animate-pulse inline-flex items-center gap-2 text-muted-foreground font-medium">
             <div className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -68,7 +69,7 @@ export default function NotificationsPage() {
 
   if (notifications.length === 0) {
     return (
-      <div className="flex-1 bg-background flex flex-col">
+      <div className={pageClassName}>
         <div className="flex-1 container mx-auto px-4 py-20 md:pt-36 text-center">
           <div className="w-24 h-24 bg-secondary/50 rounded-full flex items-center justify-center mx-auto mb-6">
             <div className="relative w-10 h-10">
@@ -92,7 +93,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="flex-1 bg-background flex flex-col">
+    <div className={pageClassName}>
       <main className="flex-1 container mx-auto px-4 pt-8 pb-24 md:pb-32 md:pt-28 max-w-3xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">Notifications</h1>
