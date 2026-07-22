@@ -38,7 +38,7 @@ export const Header = () => {
         scrolled ? "bg-background border-border" : "bg-transparent border-transparent"
       }`}
     >
-      <div className="container mx-auto px-4 flex items-center justify-between h-16">
+      <div className="container mx-auto px-4 flex items-center justify-between h-14">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group" id="header-logo">
           <span className="font-bold tracking-tight text-xl">The Edge</span>
