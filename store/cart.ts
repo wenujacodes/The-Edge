@@ -11,7 +11,6 @@ export type CartEntry = {
 
 type CartState = {
   items: CartEntry[];
-  favorites: string[];
   recentlyViewed: string[];
   isDrawerOpen: boolean;
 
@@ -28,9 +27,6 @@ type CartState = {
   setScheduledSlot: (itemId: string, slot: string) => void;
   clear: () => void;
   clearShop: (shopId: string) => void;
-
-  // Favorites Actions
-  toggleFav: (itemId: string) => void;
 
   // Navigation History
   addRecentlyViewed: (shopId: string) => void;
@@ -49,7 +45,6 @@ type CartState = {
 export const useCart = create<CartState>()(
   (set, get) => ({
     items: [],
-    favorites: [],
     recentlyViewed: [],
     isDrawerOpen: false,
 
@@ -129,16 +124,6 @@ export const useCart = create<CartState>()(
     clearShop: (shopId) => {
       const state = get();
       set({ items: state.items.filter((i) => i.item.shopId !== shopId) });
-    },
-
-    toggleFav: (id) => {
-      const state = get();
-      const isFav = state.favorites.includes(id);
-      const newFavs = isFav
-        ? state.favorites.filter((f) => f !== id)
-        : [...state.favorites, id];
-        
-      set({ favorites: newFavs });
     },
 
     addRecentlyViewed: (shopId) =>
