@@ -138,7 +138,7 @@ export default function OrdersPage() {
     <div className="flex-1 bg-background flex flex-col">
       <main
         className={`flex-1 container mx-auto px-4 max-w-3xl ${
-          isEmpty ? "flex flex-col items-center justify-center" : "pt-8 pb-24 md:pb-32 md:pt-28"
+          isEmpty ? "flex flex-col items-center justify-center pb-16 md:pb-24" : "pt-8 pb-24 md:pb-32 md:pt-28"
         }`}
       >
         {(hasAnyOrders || isLoading) && (

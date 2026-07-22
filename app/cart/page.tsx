@@ -22,7 +22,7 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="flex-1 bg-background flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-center container mx-auto px-4 text-center">
+        <div className="flex-1 flex flex-col items-center justify-center container mx-auto px-4 pb-16 md:pb-24 text-center">
           <div className="relative w-16 h-16 mx-auto mb-6">
             <img src="/icons/cart-new-black.svg" alt="" className="w-full h-full dark:hidden object-contain" loading="eager" decoding="sync" />
             <img src="/icons/cart-new-white.svg" alt="" className="hidden w-full h-full dark:block object-contain" loading="eager" decoding="sync" />
