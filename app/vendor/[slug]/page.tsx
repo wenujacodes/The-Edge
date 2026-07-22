@@ -396,11 +396,8 @@ export default function VendorDashboard() {
             </button>
           ))}
         </nav>
-        <div className="p-6 border-t border-border flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium">
-            <Utensils className="w-3.5 h-3.5" /> Customer View
-          </Link>
-          <button onClick={signOut} disabled={isSigningOut} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 font-medium">
+        <div className="p-6 border-t border-border">
+          <button onClick={signOut} disabled={isSigningOut} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 font-medium">
             <Power className="w-3.5 h-3.5" /> {isSigningOut ? "Signing out..." : "Sign out"}
           </button>
         </div>
