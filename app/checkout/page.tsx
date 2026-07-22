@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, ChevronRight, X, CheckCircle2, AlertCircle } from "lucide-react";
+import { ExternalLink, ChevronRight, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/store/cart";
 import { useCreateOrder, useShops, useSupabaseUser, useProfile as useProfileData } from "@/lib/supabase/hooks";
 import { Button } from "@/components/ui/button";
+import { CartEmptyIcon } from "@/components/ui/NavIcons";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CheckoutPage() {
@@ -80,12 +81,12 @@ export default function CheckoutPage() {
     return (
       <div className="flex-1 bg-background flex flex-col items-center justify-center p-4">
         <div className="text-center space-y-4">
-          <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-10 h-10 text-muted-foreground" />
+          <div className="flex items-center justify-center mx-auto mb-6">
+            <CartEmptyIcon className="w-6 h-6 text-muted-foreground" />
           </div>
           <h1 className="text-2xl font-bold">Your cart is empty</h1>
           <p className="text-muted-foreground">Looks like you&apos;ve already checked out or cleared your cart.</p>
-          <Button onClick={() => router.push("/")} className="pill px-6">
+          <Button onClick={() => router.push("/browse")} className="pill px-6">
             Go back to shops
           </Button>
         </div>
