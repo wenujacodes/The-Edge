@@ -358,9 +358,9 @@ export default function VendorDashboard() {
   }
 
   return (
-    <div className="flex-1 bg-secondary/20 flex overflow-hidden">
+    <div className="h-screen w-full bg-secondary/20 flex overflow-hidden">
       {/* ── SIDEBAR (Desktop) ── */}
-      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-background h-screen z-30">
+      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-background h-full z-30">
         <div className="p-6 border-b border-border bg-card/50">
           <Link href="/" className="flex items-center gap-2 mb-8">
             <div className="w-8 h-8 rounded-xl hero-gradient grid place-items-center text-white font-bold text-sm">E</div>
@@ -377,7 +377,7 @@ export default function VendorDashboard() {
             </div>
           </div>
         </div>
-        <nav className="flex-1 p-4 space-y-2 mt-4">
+        <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto">
           {[
             { id: "orders", label: "Live Orders", icon: ListOrdered },
             { id: "menu", label: "Menu Items", icon: Utensils },
@@ -396,7 +396,7 @@ export default function VendorDashboard() {
             </button>
           ))}
         </nav>
-        <div className="p-6 border-t border-border">
+        <div className="p-6 border-t border-border mt-auto">
           <button onClick={signOut} disabled={isSigningOut} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 font-medium">
             <Power className="w-3.5 h-3.5" /> {isSigningOut ? "Signing out..." : "Sign out"}
           </button>
@@ -404,7 +404,7 @@ export default function VendorDashboard() {
       </aside>
 
       {/* ── MAIN CONTENT ── */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
         
         {/* Mobile Header / Tab Bar */}
         <header className="lg:hidden bg-background border-b border-border p-4 sticky top-0 z-20">
