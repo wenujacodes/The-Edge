@@ -12,6 +12,7 @@ import { useSupabaseUser, useProfile, useUserOrders } from "@/lib/supabase/hooks
 import { updateProfile } from "@/lib/supabase/data";
 import { useSignOut } from "@/lib/supabase/useSignOut";
 import { DeleteAccountButton } from "@/components/auth/DeleteAccountButton";
+import { InviteFriendsModal } from "@/components/profile/InviteFriendsModal";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -179,6 +180,7 @@ export default function ProfilePage() {
             <section>
               <h3 className="label-mono mb-4 ml-2">Preferences</h3>
               <div className="bg-white dark:bg-card shadow-soft rounded-[2.5rem] overflow-hidden">
+                <InviteFriendsModal />
                 {[
                   { icon: Bell, label: "Notifications", sub: "Control your alerts" },
                   { icon: CreditCard, label: "Payment Methods", sub: "Manage your cards" },
