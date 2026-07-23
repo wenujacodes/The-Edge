@@ -99,7 +99,8 @@ export default function HomePage() {
 
       {/* ── SEARCH ── */}
       <section className="container mx-auto px-4 pb-4" id="search-section">
-        <div className="relative max-w-3xl mx-auto">
+        {/* Temporarily hidden while the browse-into-home merge is in progress */}
+        <div className="hidden relative max-w-3xl mx-auto">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             id="home-search"
@@ -117,6 +118,11 @@ export default function HomePage() {
             className="w-full pl-12 pr-5 py-4 rounded-full bg-secondary border border-transparent focus:border-black dark:focus:border-white focus:bg-background transition-smooth focus-dashed text-sm placeholder:text-muted-foreground outline-none"
           />
         </div>
+        {!shopsLoading && shops.length > 0 && (
+          <div className="mt-4 max-w-3xl mx-auto">
+            <ShopFilterBar shops={shops} onFilteredShopsChange={setTodaysShops} />
+          </div>
+        )}
       </section>
 
       {/* ── SHOPS ── */}
@@ -124,11 +130,6 @@ export default function HomePage() {
         <div className="mb-4">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Today&apos;s shops</h2>
         </div>
-        {!shopsLoading && shops.length > 0 && (
-          <div className="mb-4">
-            <ShopFilterBar shops={shops} onFilteredShopsChange={setTodaysShops} />
-          </div>
-        )}
         {!shopsLoading && shops.length > 0 && todaysShops.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm bg-secondary/30 rounded-3xl border border-dashed border-border">
             No shops match these filters.

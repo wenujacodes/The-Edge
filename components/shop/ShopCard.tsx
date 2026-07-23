@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { Star } from "lucide-react";
 import { Shop } from "@/lib/types";
 import { motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
@@ -59,14 +60,14 @@ export const ShopCard = ({ shop }: ShopCardProps) => {
   const visibleTags = shop.tags.filter((tag) => !hiddenShopTags.has(tag.toLowerCase()));
 
   return (
-    <article className="group flex-shrink-0 w-full h-[220px] snap-start transition-smooth rounded-3xl">
+    <article className="group flex-shrink-0 w-full snap-start transition-smooth">
       <Link
         href={`/shop/${shop.slug}`}
         id={`shop-card-${shop.id}`}
-        className="flex flex-col h-full rounded-3xl shadow-soft bg-card overflow-hidden focus-dashed"
+        className="flex flex-col focus-dashed"
       >
         {/* Banner Image Area */}
-        <div className="relative h-[90px] w-full flex-shrink-0 bg-secondary overflow-hidden">
+        <div className="relative aspect-[5/3] w-full rounded-2xl overflow-hidden bg-secondary">
           {shop.banner ? (
             <Image
               src={shop.banner}
@@ -78,7 +79,7 @@ export const ShopCard = ({ shop }: ShopCardProps) => {
           ) : (
             <div className="w-full h-full grid place-items-center text-3xl">{shop.emoji}</div>
           )}
-          
+
           {/* Overlay Open/Closed Pill */}
           <span
             className={`absolute top-3 right-3 pill text-[10px] font-semibold px-2 py-0.5 z-10 ${
@@ -91,35 +92,39 @@ export const ShopCard = ({ shop }: ShopCardProps) => {
           </span>
         </div>
 
-        {/* Content Area */}
-        <div className="p-4 pt-3 flex flex-col justify-between flex-1">
-          <div className="min-w-0">
-            <h3 className="font-semibold text-base tracking-tight truncate">{shop.name}</h3>
-            <p className="text-sm text-muted-foreground mt-0.5 truncate">{shop.tagline}</p>
+        {/* Content — no card/border/background, sits directly on the page */}
+        <div className="pt-3">
+          <h3 className="font-semibold text-base tracking-tight truncate">{shop.name}</h3>
+          <p className="text-sm text-muted-foreground mt-0.5 truncate">{shop.tagline}</p>
+
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
+            <Star className="w-3.5 h-3.5 fill-foreground text-foreground shrink-0" />
+            <span className="font-bold text-foreground">{shop.rating.toFixed(1)}</span>
+            <span className="shrink-0">({shop.reviewCount})</span>
+            <span className="shrink-0">·</span>
+            <span className="truncate">{shop.prepTime}</span>
           </div>
 
-          <div className="mt-2 overflow-hidden flex flex-col gap-2">
-            {shop.closedNote && (
-              <ScrollIfLong className="w-max">
-                <p className="text-xs text-muted-foreground italic whitespace-nowrap">
-                  {shop.closedNote}
-                </p>
-              </ScrollIfLong>
-            )}
+          {shop.closedNote && (
+            <ScrollIfLong className="w-max mt-2">
+              <p className="text-xs text-muted-foreground italic whitespace-nowrap">
+                {shop.closedNote}
+              </p>
+            </ScrollIfLong>
+          )}
 
-            {visibleTags.length > 0 && (
-              <ScrollIfLong className="flex gap-1.5 w-max">
-                {visibleTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground whitespace-nowrap"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </ScrollIfLong>
-            )}
-          </div>
+          {visibleTags.length > 0 && (
+            <ScrollIfLong className="flex gap-1.5 w-max mt-2">
+              {visibleTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground whitespace-nowrap"
+                >
+                  {tag}
+                </span>
+              ))}
+            </ScrollIfLong>
+          )}
         </div>
       </Link>
     </article>
