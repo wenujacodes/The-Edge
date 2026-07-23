@@ -117,7 +117,6 @@ export default function OrdersPage() {
         image: c.imageUrl || "/icons/icon-512.png",
         category: "",
         dietaryTags: [],
-        estimatedPrepTime: "",
         isAvailable: true
       }, c.quantity, { notes: c.notes, dining: c.dining as "dine-in" | "takeaway" });
     });

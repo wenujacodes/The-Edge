@@ -71,7 +71,7 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
   return (
     <article className="group relative cursor-default">
       {/* Image */}
-      <div className="relative aspect-[5/3] rounded-2xl overflow-hidden bg-muted">
+      <div className="relative aspect-[2/1] rounded-2xl overflow-hidden bg-muted">
         <Image
           src={item.image}
           alt={item.title}
@@ -113,20 +113,14 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
         </div>
 
         {(shopName || shop) && (
-          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{shopName ?? shop?.name}</p>
+          <p className="text-[11px] font-medium text-muted-foreground truncate mt-0.5">{shopName ?? shop?.name}</p>
         )}
 
-        {(shop || item.estimatedPrepTime) && (
+        {shop && (
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-            {shop && (
-              <>
-                <Star className="w-3 h-3 fill-foreground text-foreground shrink-0" />
-                <span className="font-bold text-foreground">{shop.rating.toFixed(1)}</span>
-                <span className="shrink-0">({shop.reviewCount})</span>
-              </>
-            )}
-            {shop && item.estimatedPrepTime && <span className="shrink-0">·</span>}
-            {item.estimatedPrepTime && <span className="shrink-0">{item.estimatedPrepTime}</span>}
+            <Star className="w-3 h-3 fill-foreground text-foreground shrink-0" />
+            <span className="font-bold text-foreground">{shop.rating.toFixed(1)}</span>
+            <span className="shrink-0">({shop.reviewCount})</span>
           </div>
         )}
 

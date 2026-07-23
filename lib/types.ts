@@ -9,7 +9,6 @@ export type Shop = {
   logo?: string;
   isOpen: boolean;
   closedNote?: string;
-  prepTime: string;
   rating: number;
   reviewCount: number;
   tags: string[];
@@ -31,7 +30,6 @@ export type MenuItem = {
   discount?: number;
   category: string;
   dietaryTags: string[];
-  estimatedPrepTime: string;
   availableSlots?: string[];
   maxPerOrder?: number;
   isAvailable: boolean;

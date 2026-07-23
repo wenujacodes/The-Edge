@@ -30,7 +30,6 @@ export function CartShopSection({ shop, items }: { shop: Shop; items: CartEntry[
             <div className="font-bold tracking-tight">{shop.name}</div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold flex items-center gap-2">
               <span>{items.length} {items.length === 1 ? "item" : "items"}</span>
-              <span>Prep: {shop.prepTime}</span>
             </div>
           </div>
         </div>

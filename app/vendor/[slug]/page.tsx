@@ -72,7 +72,6 @@ export default function VendorDashboard() {
     imageUrl: "",
     isAvailable: true,
     maxPerOrder: "",
-    estimatedPrepTime: "10",
     badge: "",
     isPopular: false,
   });
@@ -89,7 +88,6 @@ export default function VendorDashboard() {
     logoUrl: "",
     isOpen: true,
     closedNote: "",
-    prepTimeMinutes: 10,
     paymentLink: "",
   });
 
@@ -106,7 +104,6 @@ export default function VendorDashboard() {
         logoUrl: shop.logo || "",
         isOpen: shop.isOpen ?? true,
         closedNote: shop.closedNote || "",
-        prepTimeMinutes: shop.prepTime ? parseInt(shop.prepTime, 10) || 10 : 10,
         paymentLink: shop.paymentLink || "",
       });
     }
@@ -220,7 +217,6 @@ export default function VendorDashboard() {
         imageUrl: item.image || "",
         isAvailable: item.isAvailable ?? true,
         maxPerOrder: item.maxPerOrder ? item.maxPerOrder.toString() : "",
-        estimatedPrepTime: item.estimatedPrepTime ? parseInt(item.estimatedPrepTime, 10).toString() : "10",
         badge: item.badge || "",
         isPopular: item.popular ?? false,
       });
@@ -235,7 +231,6 @@ export default function VendorDashboard() {
         imageUrl: "",
         isAvailable: true,
         maxPerOrder: "",
-        estimatedPrepTime: "10",
         badge: "",
         isPopular: false,
       });
@@ -255,7 +250,6 @@ export default function VendorDashboard() {
 
     const discountNum = itemForm.discountPrice ? parseInt(itemForm.discountPrice, 10) : null;
     const maxOrderNum = itemForm.maxPerOrder ? parseInt(itemForm.maxPerOrder, 10) : null;
-    const prepTimeNum = itemForm.estimatedPrepTime ? parseInt(itemForm.estimatedPrepTime, 10) : 10;
 
     try {
       if (editingItemId) {
@@ -270,7 +264,6 @@ export default function VendorDashboard() {
             image_url: itemForm.imageUrl || null,
             is_available: itemForm.isAvailable,
             max_per_order: maxOrderNum,
-            estimated_prep_time_minutes: prepTimeNum,
             badge: itemForm.badge || null,
             is_popular: itemForm.isPopular,
           },
@@ -287,7 +280,6 @@ export default function VendorDashboard() {
           imageUrl: itemForm.imageUrl,
           isAvailable: itemForm.isAvailable,
           maxPerOrder: maxOrderNum,
-          estimatedPrepTimeMinutes: prepTimeNum,
           badge: itemForm.badge || null,
           isPopular: itemForm.isPopular,
         });
@@ -667,11 +659,6 @@ export default function VendorDashboard() {
                             Max {item.maxPerOrder}/order
                           </span>
                         )}
-                        {item.estimatedPrepTime && (
-                          <span className="text-xs px-2 py-0.5 bg-secondary rounded-full font-medium text-foreground">
-                            ⏱️ {item.estimatedPrepTime}
-                          </span>
-                        )}
                       </div>
                     </div>
 
@@ -870,26 +857,14 @@ export default function VendorDashboard() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Prep Time (mins)</label>
-                    <Input
-                      type="number"
-                      value={shopForm.prepTimeMinutes}
-                      onChange={(e) => setShopForm({ ...shopForm, prepTimeMinutes: parseInt(e.target.value, 10) || 0 })}
-                      onBlur={() => handleAutoSaveShopDetails({ prep_time_minutes: shopForm.prepTimeMinutes }, "Prep time")}
-                      className="rounded-2xl"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Link</label>
-                    <Input
-                      value={shopForm.paymentLink}
-                      onChange={(e) => setShopForm({ ...shopForm, paymentLink: e.target.value })}
-                      onBlur={() => handleAutoSaveShopDetails({ payment_link: shopForm.paymentLink || null }, "Payment link")}
-                      className="rounded-2xl"
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Link</label>
+                  <Input
+                    value={shopForm.paymentLink}
+                    onChange={(e) => setShopForm({ ...shopForm, paymentLink: e.target.value })}
+                    onBlur={() => handleAutoSaveShopDetails({ payment_link: shopForm.paymentLink || null }, "Payment link")}
+                    className="rounded-2xl"
+                  />
                 </div>
               </div>
 
@@ -997,27 +972,14 @@ export default function VendorDashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Estimated Prep (Mins)</label>
-                    <Input
-                      type="number"
-                      value={itemForm.estimatedPrepTime}
-                      onChange={(e) => setItemForm({ ...itemForm, estimatedPrepTime: e.target.value })}
-                      placeholder="10"
-                      className="rounded-2xl"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Badge Label</label>
-                    <Input
-                      value={itemForm.badge}
-                      onChange={(e) => setItemForm({ ...itemForm, badge: e.target.value })}
-                      placeholder="e.g. Chef Special, Spicy"
-                      className="rounded-2xl"
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Badge Label</label>
+                  <Input
+                    value={itemForm.badge}
+                    onChange={(e) => setItemForm({ ...itemForm, badge: e.target.value })}
+                    placeholder="e.g. Chef Special, Spicy"
+                    className="rounded-2xl"
+                  />
                 </div>
 
                 <div className="space-y-1">

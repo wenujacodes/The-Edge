@@ -17,7 +17,6 @@ type ShopRow = {
   logo_url: string | null;
   is_open: boolean;
   closed_note: string | null;
-  prep_time_minutes: number;
   rating: number;
   review_count: number;
   tags: string[] | null;
@@ -41,7 +40,6 @@ type MenuItemRow = {
   discount_lkr: number | null;
   category: string;
   dietary_tags: string[] | null;
-  estimated_prep_time_minutes: number;
   available_slots: string[] | null;
   max_per_order: number | null;
   is_available: boolean;
@@ -170,7 +168,6 @@ function mapShop(row: ShopRow): Shop {
     logo: row.logo_url ?? undefined,
     isOpen: isCurrentlyOpen,
     closedNote: row.closed_note || (!isCurrentlyOpen ? "Closed outside operating hours" : undefined),
-    prepTime: `${row.prep_time_minutes} min`,
     rating: Number(row.rating),
     reviewCount: row.review_count,
     tags: row.tags ?? [],
@@ -194,7 +191,6 @@ function mapMenuItem(row: MenuItemRow): MenuItem {
     discount: row.discount_lkr ?? undefined,
     category: row.category,
     dietaryTags: row.dietary_tags ?? [],
-    estimatedPrepTime: `${row.estimated_prep_time_minutes} min`,
     availableSlots: row.available_slots ?? undefined,
     maxPerOrder: row.max_per_order ?? undefined,
     isAvailable: row.is_available,
@@ -625,7 +621,6 @@ export async function updateShopDetails(
     logo_url: string | null;
     is_open: boolean;
     closed_note: string | null;
-    prep_time_minutes: number;
     payment_link: string | null;
     opening_time: string;
     closing_time: string;
@@ -653,7 +648,6 @@ export async function createMenuItem(item: {
   dietaryTags?: string[];
   isAvailable?: boolean;
   maxPerOrder?: number | null;
-  estimatedPrepTimeMinutes?: number;
   badge?: string | null;
   isPopular?: boolean;
 }) {
@@ -671,7 +665,6 @@ export async function createMenuItem(item: {
     dietary_tags: item.dietaryTags ?? [],
     is_available: item.isAvailable ?? true,
     max_per_order: item.maxPerOrder ?? null,
-    estimated_prep_time_minutes: item.estimatedPrepTimeMinutes ?? 10,
     badge: item.badge ?? null,
     is_popular: item.isPopular ?? false,
   });
@@ -691,7 +684,6 @@ export async function updateMenuItem(
     dietary_tags: string[];
     is_available: boolean;
     max_per_order: number | null;
-    estimated_prep_time_minutes: number;
     badge: string | null;
     is_popular: boolean;
   }>

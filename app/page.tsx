@@ -211,7 +211,7 @@ export default function HomePage() {
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">Popular picks</h2>
             <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-4 scroll-pl-4 scroll-pr-4">
               {Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className={`w-[200px] md:w-[240px] shrink-0 ${idx === 0 ? 'ml-4' : ''}`}>
+                <div key={idx} className={`w-[280px] md:w-[340px] shrink-0 ${idx === 0 ? 'ml-4' : ''}`}>
                   <FoodCardSkeleton />
                 </div>
               ))}
@@ -260,7 +260,7 @@ export default function HomePage() {
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">{section.title}</h2>
               <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-4 scroll-pl-4 scroll-pr-4">
                 {section.list.map((item, index) => (
-                  <div key={item.id} className={`w-[200px] md:w-[240px] shrink-0 snap-start ${index === 0 ? 'ml-4' : ''} ${index === section.list.length - 1 ? 'mr-4' : ''}`}>
+                  <div key={item.id} className={`w-[280px] md:w-[340px] shrink-0 snap-start ${index === 0 ? 'ml-4' : ''} ${index === section.list.length - 1 ? 'mr-4' : ''}`}>
                     <FoodCard item={item} shopName={shopNames.get(item.shopId)} />
                   </div>
                 ))}

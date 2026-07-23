@@ -4,16 +4,11 @@ import * as React from "react";
 import { ChevronDown, Star, ArrowUpDown } from "lucide-react";
 import { Shop } from "@/lib/types";
 
-type SortOption = "default" | "rating" | "prepTime" | "name";
-
-function parsePrepMinutes(prepTime: string) {
-  return parseInt(prepTime, 10) || Infinity;
-}
+type SortOption = "default" | "rating" | "name";
 
 const sortOptions: { label: string; value: SortOption }[] = [
   { label: "Recommended", value: "default" },
   { label: "Rating", value: "rating" },
-  { label: "Prep time", value: "prepTime" },
   { label: "Name (A-Z)", value: "name" },
 ];
 
@@ -108,7 +103,6 @@ export function ShopFilterBar({
 
     list = [...list].sort((a, b) => {
       if (sortBy === "rating") return b.rating - a.rating;
-      if (sortBy === "prepTime") return parsePrepMinutes(a.prepTime) - parsePrepMinutes(b.prepTime);
       if (sortBy === "name") return a.name.localeCompare(b.name);
       return Number(b.isOpen) - Number(a.isOpen);
     });

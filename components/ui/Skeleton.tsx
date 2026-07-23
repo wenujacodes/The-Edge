@@ -5,7 +5,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
 export function FoodCardSkeleton() {
   return (
     <div>
-      <Skeleton className="aspect-[5/3] rounded-2xl" />
+      <Skeleton className="aspect-[2/1] rounded-2xl" />
       <div className="pt-3 flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
           <Skeleton className="h-4 w-3/4" />
