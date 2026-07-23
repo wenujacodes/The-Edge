@@ -119,13 +119,7 @@ export function AddToCartModal({
                   </div>
 
                   <div className="border-t border-border pt-5">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="text-base font-bold">Dining</h3>
-                      <span className="pill bg-secondary text-muted-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1">
-                        Required
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-3">Choose 1</p>
+                    <h3 className="text-base font-bold mb-3">Dining</h3>
 
                     <div>
                       {(["takeaway", "dine-in"] as const).map((type, idx) => (

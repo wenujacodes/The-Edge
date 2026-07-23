@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { motion, AnimatePresence } from "framer-motion";
+import { dietaryFilters } from "@/lib/designSystem";
 import type { OrderStatus } from "@/lib/types";
 import type { VendorOrder } from "@/lib/supabase/data";
 
@@ -75,6 +76,8 @@ export default function VendorDashboard() {
     estimatedPrepTime: "10",
     badge: "",
     isPopular: false,
+    searchKeywords: "",
+    dietaryTags: [] as string[],
   });
 
   // Settings State
@@ -223,6 +226,8 @@ export default function VendorDashboard() {
         estimatedPrepTime: item.estimatedPrepTime ? parseInt(item.estimatedPrepTime, 10).toString() : "10",
         badge: item.badge || "",
         isPopular: item.popular ?? false,
+        searchKeywords: item.searchKeywords ? item.searchKeywords.join(", ") : "",
+        dietaryTags: item.dietaryTags || [],
       });
     } else {
       setEditingItemId(null);
@@ -238,6 +243,8 @@ export default function VendorDashboard() {
         estimatedPrepTime: "10",
         badge: "",
         isPopular: false,
+        searchKeywords: "",
+        dietaryTags: [],
       });
     }
     setIsItemModalOpen(true);
@@ -256,6 +263,9 @@ export default function VendorDashboard() {
     const discountNum = itemForm.discountPrice ? parseInt(itemForm.discountPrice, 10) : null;
     const maxOrderNum = itemForm.maxPerOrder ? parseInt(itemForm.maxPerOrder, 10) : null;
     const prepTimeNum = itemForm.estimatedPrepTime ? parseInt(itemForm.estimatedPrepTime, 10) : 10;
+    const keywordsArray = itemForm.searchKeywords
+      ? itemForm.searchKeywords.split(",").map((k) => k.trim()).filter(Boolean)
+      : [];
 
     try {
       if (editingItemId) {
@@ -273,6 +283,8 @@ export default function VendorDashboard() {
             estimated_prep_time_minutes: prepTimeNum,
             badge: itemForm.badge || null,
             is_popular: itemForm.isPopular,
+            search_keywords: keywordsArray,
+            dietary_tags: itemForm.dietaryTags,
           },
         });
         toast.success("Menu item updated");
@@ -290,6 +302,8 @@ export default function VendorDashboard() {
           estimatedPrepTimeMinutes: prepTimeNum,
           badge: itemForm.badge || null,
           isPopular: itemForm.isPopular,
+          searchKeywords: keywordsArray,
+          dietaryTags: itemForm.dietaryTags,
         });
         toast.success("Menu item created");
       }
@@ -304,13 +318,18 @@ export default function VendorDashboard() {
     try {
       await deleteItemMutation.mutateAsync(itemId);
       toast.success("Item deleted");
-    } catch {
-      toast.error("Failed to delete item");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete item");
     }
   };
 
-  const toggleDietaryTag = async (menuItemId: string, currentTags: string[], tag: "Vegan" | "Vegetarian") => {
-    const nextTags = currentTags.includes(tag)
+  const toggleDietaryTag = async (menuItemId: string, currentTags: string[], tag: string) => {
+    const isRemoving = currentTags.includes(tag);
+    if (!isRemoving && currentTags.length >= 3) {
+      toast.error("Maximum 3 tags allowed per item");
+      return;
+    }
+    const nextTags = isRemoving
       ? currentTags.filter((itemTag) => itemTag !== tag)
       : [...currentTags, tag];
 
@@ -511,11 +530,7 @@ export default function VendorDashboard() {
                 ))}
               </div>
             )}
-            {tab === "menu" && (
-              <Button onClick={() => handleOpenItemModal()} className="pill bg-primary text-primary-foreground text-xs font-bold px-4 py-2">
-                <Plus className="w-4 h-4 mr-1.5" /> Add Menu Item
-              </Button>
-            )}
+
           </div>
         </div>
 
@@ -690,26 +705,15 @@ export default function VendorDashboard() {
                         {item.isAvailable ? "In Stock" : "Out of Stock"}
                       </button>
 
-                      <div className="flex flex-wrap gap-1.5">
-                        {(["Vegan", "Vegetarian"] as const).map((tag) => {
-                          const active = item.dietaryTags.includes(tag);
-                          return (
-                            <button
-                              key={tag}
-                              type="button"
-                              onClick={() => toggleDietaryTag(item.id, item.dietaryTags, tag)}
-                              disabled={updateDietaryTags.isPending}
-                              className={`rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider transition-all disabled:opacity-60 ${
-                                active
-                                  ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
-                                  : "border-border bg-secondary/50 text-muted-foreground hover:text-foreground"
-                              }`}
-                            >
-                              {active && <Check className="mr-1 inline h-3 w-3" />}
-                              {tag}
-                            </button>
-                          );
-                        })}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {item.dietaryTags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
+                          >
+                            {tag}
+                          </span>
+                        ))}
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -997,38 +1001,67 @@ export default function VendorDashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Estimated Prep (Mins)</label>
-                    <Input
-                      type="number"
-                      value={itemForm.estimatedPrepTime}
-                      onChange={(e) => setItemForm({ ...itemForm, estimatedPrepTime: e.target.value })}
-                      placeholder="10"
-                      className="rounded-2xl"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Badge Label</label>
-                    <Input
-                      value={itemForm.badge}
-                      onChange={(e) => setItemForm({ ...itemForm, badge: e.target.value })}
-                      placeholder="e.g. Chef Special, Spicy"
-                      className="rounded-2xl"
-                    />
-                  </div>
-                </div>
-
                 <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Search Keywords (comma separated)</label>
                   <Input
-                    value={itemForm.description}
-                    onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
-                    placeholder="Brief details & ingredients..."
+                    value={itemForm.searchKeywords}
+                    onChange={(e) => setItemForm({ ...itemForm, searchKeywords: e.target.value })}
+                    placeholder="e.g. Koththu, Kottu, Roti, Chicken Kottu"
                     className="rounded-2xl"
                   />
+                  <p className="text-[11px] text-muted-foreground">Add alternative names or spellings so customers can easily find this item in search.</p>
                 </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Tags (Select max 3)
+                    </label>
+                    <span className="text-[11px] font-semibold text-muted-foreground">
+                      {itemForm.dietaryTags.length}/3 selected
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 p-3 rounded-2xl bg-secondary/30 border border-border/50">
+                    {dietaryFilters.map((tag) => {
+                      const selected = itemForm.dietaryTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => {
+                            if (selected) {
+                              setItemForm({
+                                ...itemForm,
+                                dietaryTags: itemForm.dietaryTags.filter((t) => t !== tag),
+                              });
+                            } else {
+                              if (itemForm.dietaryTags.length >= 3) {
+                                toast.error("Maximum 3 tags allowed per item");
+                                return;
+                              }
+                              setItemForm({
+                                ...itemForm,
+                                dietaryTags: [...itemForm.dietaryTags, tag],
+                              });
+                            }
+                          }}
+                          className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+                            selected
+                              ? "bg-primary text-primary-foreground shadow-soft"
+                              : itemForm.dietaryTags.length >= 3
+                              ? "bg-secondary text-muted-foreground/50 opacity-50 cursor-not-allowed"
+                              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          }`}
+                        >
+                          {selected && <Check className="mr-1 inline h-3 w-3" />}
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Image URL</label>

@@ -108,12 +108,15 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
                 </motion.span>
               </motion.button>
             </div>
-            <div className="h-5 -mt-0.5">
-              {dietLabel && (
-                <span className="inline-flex w-fit rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
-                  {dietLabel}
+            <div className="min-h-[20px] -mt-0.5 flex flex-wrap gap-1">
+              {(item.dietaryTags || []).slice(0, 3).map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex w-fit rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
+                >
+                  {tag}
                 </span>
-              )}
+              ))}
             </div>
             {(shopName || shop) && (
               <p className="text-xs text-muted-foreground mt-0.5 truncate">{shopName ?? shop?.name}</p>

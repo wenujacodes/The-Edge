@@ -17,7 +17,7 @@ const CATEGORIES = [
   { id: "desserts", label: "Desserts", emoji: "🍰" },
 ];
 
-const DIETARY = ["Vegetarian", "Vegan"];
+import { dietaryFilters as DIETARY } from "@/lib/designSystem";
 
 export default function BrowsePage() {
   return (

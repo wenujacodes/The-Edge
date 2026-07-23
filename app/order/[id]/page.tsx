@@ -7,7 +7,7 @@ import { Check, ChefHat, Bell, ArrowRight, ArrowLeft, AlertTriangle, ChevronLeft
 import { ReceiptCard } from "@/components/ui/ReceiptCard";
 import { useLiveOrder, useUserOrders, useSupabaseUser } from "@/lib/supabase/hooks";
 
-type Stage = 0 | 1 | 2;
+type Stage = 0 | 1 | 2 | 3;
 
 const stages = [
   { label: "Order received", sub: "We've got your order!", icon: Check, color: "warning" },
@@ -92,9 +92,9 @@ export default function OrderStatusPage() {
       paid: 0,
       preparing: 1,
       ready: 2,
-      completed: 2,
-      expired: 2,
-      customer_late: 2,
+      completed: 3,
+      expired: 3,
+      customer_late: 3,
     };
 
     setStage(statusStage[liveOrder.status] ?? 0);
@@ -164,8 +164,8 @@ export default function OrderStatusPage() {
         onTouchEnd={handleTouchEnd}
       >
 
-        {/* Expired warning */}
-        {expired && (
+        {/* Expired / Completed banner */}
+        {expired ? (
           <div className="mb-6 rounded-2xl bg-destructive/10 border border-destructive/20 px-5 py-4 flex items-center gap-3 text-destructive">
             <AlertTriangle className="w-5 h-5 shrink-0" />
             <div>
@@ -173,7 +173,15 @@ export default function OrderStatusPage() {
               <div className="text-sm opacity-80">This order can no longer be collected.</div>
             </div>
           </div>
-        )}
+        ) : order?.status === "completed" ? (
+          <div className="mb-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 px-5 py-4 flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
+            <Check className="w-5 h-5 shrink-0" />
+            <div>
+              <div className="font-semibold">Order completed</div>
+              <div className="text-sm opacity-80">This order has been fulfilled and collected. Enjoy!</div>
+            </div>
+          </div>
+        ) : null}
 
         {/* Swipe navigation indicator */}
         {allOrders.length > 1 && (
@@ -207,27 +215,33 @@ export default function OrderStatusPage() {
         <div className="rounded-3xl shadow-soft bg-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-semibold tracking-tight">Order status</h2>
+            {order?.status === "completed" && (
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                Completed
+              </span>
+            )}
           </div>
           <div className="relative">
             <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-border" />
             <div
               className="absolute left-5 top-5 w-0.5 bg-success transition-all duration-700"
-              style={{ height: `${stage * 50}%` }}
+              style={{ height: `${Math.min(stage, 2) * 50}%` }}
             />
             <div className="space-y-6">
               {stages.map((s, idx) => {
-                const reached = stage >= idx;
+                const reached = stage > idx || order?.status === "completed";
+                const isCurrent = stage === idx && order?.status !== "completed";
                 const Icon = s.icon;
                 return (
                   <div key={s.label} className="relative flex items-center gap-4">
                     <div
                       className={`relative z-10 w-10 h-10 rounded-full grid place-items-center transition-smooth ${
                         reached
-                          ? idx === 2
+                          ? idx === 2 || order?.status === "completed"
                             ? "bg-success text-success-foreground"
                             : "bg-foreground text-background"
                           : "bg-secondary text-muted-foreground"
-                      } ${stage === idx && idx !== 2 ? "animate-pulse-soft" : ""}`}
+                      } ${isCurrent ? "animate-pulse-soft" : ""}`}
                     >
                       <Icon className="w-4 h-4" />
                     </div>
@@ -236,7 +250,15 @@ export default function OrderStatusPage() {
                         {s.label}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {stage === idx ? "In progress…" : reached ? s.sub : "Waiting…"}
+                        {order?.status === "completed"
+                          ? idx === 2
+                            ? "Collected & completed!"
+                            : s.sub
+                          : isCurrent
+                          ? "In progress…"
+                          : reached
+                          ? s.sub
+                          : "Waiting…"}
                       </div>
                     </div>
                   </div>
