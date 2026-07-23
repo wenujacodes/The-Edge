@@ -3,7 +3,7 @@
 import * as React from "react";
 import {
   Bell, LogOut, ChevronRight, Moon, Sun, Pencil, CreditCard,
-  HelpCircle, Check,
+  HelpCircle, Check, MessageSquare,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { QuickThemeToggle } from "@/components/ui/QuickThemeToggle";
@@ -185,6 +185,7 @@ export default function ProfilePage() {
                   { icon: Bell, label: "Notifications", sub: "Control your alerts" },
                   { icon: CreditCard, label: "Payment Methods", sub: "Manage your cards" },
                   { icon: HelpCircle, label: "Help Center", sub: "FAQs and guides" },
+                  { icon: MessageSquare, label: "Feedback", sub: "Tell us what you think" },
                 ].map((item, idx, arr) => (
                   <button 
                     key={item.label}
