@@ -97,13 +97,13 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
       <div className="pt-3">
         <div className="flex items-start gap-2">
           <h3 className="min-w-0 flex-1 flex items-center gap-1 font-bold text-sm tracking-tight leading-tight">
+            <span className="truncate">{item.title}</span>
             {specialDietaryTag && (
               <Leaf
                 className="w-3 h-3 text-emerald-500 shrink-0"
                 aria-label={specialDietaryTag}
               />
             )}
-            <span className="truncate">{item.title}</span>
           </h3>
           <motion.button
             id={`fav-btn-${item.id}`}
