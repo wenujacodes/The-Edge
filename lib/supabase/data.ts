@@ -711,12 +711,22 @@ export async function deleteMenuItem(menuItemId: string) {
   const supabase = getSupabaseBrowserClient();
   if (!supabase) return;
 
+  await supabase.from("user_cart").delete().eq("menu_item_id", menuItemId);
+  await supabase.from("user_favorites").delete().eq("menu_item_id", menuItemId);
+
   const { error } = await supabase
     .from("menu_items")
     .delete()
     .eq("id", menuItemId);
 
-  if (error) throw error;
+  if (error) {
+    const { error: updateError } = await supabase
+      .from("menu_items")
+      .update({ is_available: false })
+      .eq("id", menuItemId);
+
+    if (updateError) throw error;
+  }
 }
 
 // ---------------------------------------------------------------------------

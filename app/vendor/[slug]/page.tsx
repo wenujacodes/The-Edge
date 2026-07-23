@@ -304,8 +304,8 @@ export default function VendorDashboard() {
     try {
       await deleteItemMutation.mutateAsync(itemId);
       toast.success("Item deleted");
-    } catch {
-      toast.error("Failed to delete item");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete item");
     }
   };
 
