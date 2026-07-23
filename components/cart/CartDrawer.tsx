@@ -72,7 +72,7 @@ export function CartDrawer() {
             <div className="shrink-0 border-t border-border p-6 space-y-4">
               <div className="flex justify-between items-baseline">
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total</span>
-                <span className="font-mono text-2xl font-black text-primary">Rs {total()}</span>
+                <span className="font-mono text-2xl font-black text-foreground dark:text-primary">Rs {total()}</span>
               </div>
 
               <button

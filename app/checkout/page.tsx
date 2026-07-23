@@ -105,7 +105,7 @@ export default function CheckoutPage() {
       <div className="container mx-auto px-4 py-8 md:pt-28 max-w-4xl grid lg:grid-cols-[1fr_360px] gap-8">
         {/* Left: per-shop payment cards */}
         <div>
-          <div className="label-mono mb-2 text-primary">Sequential Checkout</div>
+          <div className="label-mono mb-2 text-foreground dark:text-primary">Sequential Checkout</div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-8">Process Payments</h1>
 
           <div className="space-y-6">
@@ -134,7 +134,7 @@ export default function CheckoutPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-mono font-bold text-xl text-primary">Rs {subtotal}</div>
+                        <div className="font-mono font-bold text-xl text-foreground dark:text-primary">Rs {subtotal}</div>
                         <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Subtotal</div>
                       </div>
                     </div>
@@ -170,7 +170,7 @@ export default function CheckoutPage() {
         {/* Right: sticky order summary */}
         <aside className="h-fit">
           <div className="sticky top-24 rounded-[2.5rem] shadow-soft bg-card p-8">
-            <div className="label-mono mb-4 text-primary">Order Summary</div>
+            <div className="label-mono mb-4 text-foreground dark:text-primary">Order Summary</div>
 
             <div className="space-y-4 mb-8">
               {shopIds.map((shopId) => {
@@ -191,8 +191,8 @@ export default function CheckoutPage() {
 
             <div className="space-y-1 mb-6">
               <div className="flex justify-between items-baseline">
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Grand Total</span>
-                <span className="font-mono text-2xl font-black text-primary">Rs {grandTotal}</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total</span>
+                <span className="font-mono text-2xl font-black text-foreground dark:text-primary">Rs {grandTotal}</span>
               </div>
             </div>
 
@@ -222,7 +222,7 @@ export default function CheckoutPage() {
               <div className="p-8">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <div className="label-mono text-primary mb-1 text-[10px]">Payment Step</div>
+                    <div className="label-mono text-foreground dark:text-primary mb-1 text-[10px]">Payment Step</div>
                     <h2 className="text-2xl font-bold">Confirm Payment</h2>
                   </div>
                   <button 
@@ -243,12 +243,12 @@ export default function CheckoutPage() {
                       <div className="bg-secondary/50 rounded-3xl p-6 text-center">
                         <div className="text-4xl mb-2">{shop?.emoji}</div>
                         <div className="text-xl font-bold mb-1">{shop?.name}</div>
-                        <div className="font-mono text-3xl font-black text-primary">Rs {subtotal}</div>
+                        <div className="font-mono text-3xl font-black text-foreground dark:text-primary">Rs {subtotal}</div>
                       </div>
 
                       <div className="space-y-4">
-                        <div className="flex items-start gap-3 p-4 rounded-2xl bg-primary/5 text-primary text-xs leading-relaxed border border-primary/10">
-                          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <div className="flex items-start gap-3 p-4 rounded-2xl bg-primary/5 text-foreground dark:text-primary text-xs leading-relaxed border border-primary/10">
+                          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary" />
                           <p>Please open the shop&apos;s payment link and complete the transfer. Once done, come back here to confirm.</p>
                         </div>
 

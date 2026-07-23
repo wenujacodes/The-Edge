@@ -58,7 +58,7 @@ export default function CartPage() {
         {/* Left: cart items */}
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-4 mb-2">
-            <div className="label-mono text-primary">
+            <div className="label-mono text-foreground dark:text-primary">
               {groupedEntries.length > 1 ? "Multi-shop cart" : "Shop cart"}
             </div>
             <OrderHistoryLink />
@@ -81,7 +81,7 @@ export default function CartPage() {
         {/* Right: order summary */}
         <aside className="h-fit">
           <div className="sticky top-24 rounded-[2.5rem] shadow-soft bg-card p-8">
-            <div className="label-mono mb-4 text-primary">Final Summary</div>
+            <div className="label-mono mb-4 text-foreground dark:text-primary">Final Summary</div>
             <h2 className="text-2xl font-bold tracking-tight mb-6">
               Total Order
             </h2>
@@ -112,8 +112,8 @@ export default function CartPage() {
 
             <div className="space-y-1 mb-8">
               <div className="flex justify-between items-baseline">
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Grand Total</span>
-                <span className="font-mono text-3xl font-black text-primary">Rs {total()}</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total</span>
+                <span className="font-mono text-3xl font-black text-foreground dark:text-primary">Rs {total()}</span>
               </div>
             </div>
 
