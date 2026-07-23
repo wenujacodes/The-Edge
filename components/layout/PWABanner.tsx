@@ -80,7 +80,17 @@ export const PWABanner = () => {
     }
   };
 
-  const open = !isInstalled && !dismissed;
+  // Only worth showing once we can actually act: on Android/Chrome that means the real
+  // native install prompt has been captured, so the button below fires the browser's own
+  // "Install app?" permission dialog. iOS has no such API, so instructions are all we can offer.
+  const canAct = isIOS || Boolean(installPrompt);
+  const open = !isInstalled && !dismissed && canAct;
+
+  useEffect(() => {
+    if (open) {
+      sessionStorage.setItem("pwa_prompt_dismissed", "true");
+    }
+  }, [open]);
 
   return (
     <AnimatePresence>
@@ -134,10 +144,10 @@ export const PWABanner = () => {
               ) : (
                 <button
                   onClick={handleInstall}
-                  disabled={!installPrompt || isInstalling}
+                  disabled={isInstalling}
                   className="w-full h-14 rounded-2xl bg-foreground text-background font-bold text-sm hover:bg-foreground/90 transition-colors disabled:opacity-60"
                 >
-                  {isInstalling ? "Installing…" : installPrompt ? "Add to Home Screen" : "Use your browser menu to install"}
+                  {isInstalling ? "Installing…" : "Add to Home Screen"}
                 </button>
               )}
               <button
