@@ -993,38 +993,7 @@ export default function VendorDashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Estimated Prep (Mins)</label>
-                    <Input
-                      type="number"
-                      value={itemForm.estimatedPrepTime}
-                      onChange={(e) => setItemForm({ ...itemForm, estimatedPrepTime: e.target.value })}
-                      placeholder="10"
-                      className="rounded-2xl"
-                    />
-                  </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Badge Label</label>
-                    <Input
-                      value={itemForm.badge}
-                      onChange={(e) => setItemForm({ ...itemForm, badge: e.target.value })}
-                      placeholder="e.g. Chef Special, Spicy"
-                      className="rounded-2xl"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Description</label>
-                  <Input
-                    value={itemForm.description}
-                    onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
-                    placeholder="Brief details & ingredients..."
-                    className="rounded-2xl"
-                  />
-                </div>
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Image URL</label>
