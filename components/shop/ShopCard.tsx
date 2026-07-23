@@ -54,11 +54,7 @@ interface ShopCardProps {
   shop: Shop;
 }
 
-const hiddenShopTags = new Set(["halal", "gluten-free", "gluten free"]);
-
 export const ShopCard = ({ shop }: ShopCardProps) => {
-  const visibleTags = shop.tags.filter((tag) => !hiddenShopTags.has(tag.toLowerCase()));
-
   return (
     <article className="group flex-shrink-0 w-full snap-start transition-smooth">
       <Link
@@ -101,8 +97,6 @@ export const ShopCard = ({ shop }: ShopCardProps) => {
             <Star className="w-3.5 h-3.5 fill-foreground text-foreground shrink-0" />
             <span className="font-bold text-foreground">{shop.rating.toFixed(1)}</span>
             <span className="shrink-0">({shop.reviewCount})</span>
-            <span className="shrink-0">·</span>
-            <span className="truncate">{shop.prepTime}</span>
           </div>
 
           {shop.closedNote && (
@@ -110,19 +104,6 @@ export const ShopCard = ({ shop }: ShopCardProps) => {
               <p className="text-xs text-muted-foreground italic whitespace-nowrap">
                 {shop.closedNote}
               </p>
-            </ScrollIfLong>
-          )}
-
-          {visibleTags.length > 0 && (
-            <ScrollIfLong className="flex gap-1.5 w-max mt-2">
-              {visibleTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground whitespace-nowrap"
-                >
-                  {tag}
-                </span>
-              ))}
             </ScrollIfLong>
           )}
         </div>
