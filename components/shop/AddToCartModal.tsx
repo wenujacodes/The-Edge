@@ -97,7 +97,7 @@ export function AddToCartModal({
                     {shopName && (
                       <p className="text-sm text-muted-foreground mt-0.5">{shopName}</p>
                     )}
-                    <div className="mt-1.5 font-mono font-bold text-lg text-muted-foreground">
+                    <div className="mt-1.5 font-mono font-black text-lg text-foreground">
                       Rs {item.price.toFixed(0)}
                     </div>
                     {item.dietaryTags.length > 0 && (
