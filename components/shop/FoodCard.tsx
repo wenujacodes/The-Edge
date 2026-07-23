@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useAnimation } from "framer-motion";
-import { Check, Heart, Plus, Star } from "lucide-react";
+import { Check, Heart, Leaf, Plus, Star } from "lucide-react";
 import { toast } from "sonner";
 import { MenuItem } from "@/lib/types";
 import { useCart } from "@/store/cart";
@@ -28,6 +28,9 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
   const fav = optimisticFav ?? serverFav;
   const { data: shop } = useShopById(item.shopId);
   const isInCart = items.some((cartItem) => cartItem.item.id === item.id);
+  const specialDietaryTag = item.dietaryTags.find((tag) =>
+    ["vegan", "vegetarian"].includes(tag.toLowerCase())
+  );
   const heartControls = useAnimation();
   const isFirstRender = useRef(true);
 
@@ -93,7 +96,15 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
       {/* Content — no card/border/background, sits directly on the page */}
       <div className="pt-3">
         <div className="flex items-start gap-2">
-          <h3 className="min-w-0 flex-1 font-bold text-sm tracking-tight truncate leading-tight">{item.title}</h3>
+          <h3 className="min-w-0 flex-1 flex items-center gap-1 font-bold text-sm tracking-tight leading-tight">
+            {specialDietaryTag && (
+              <Leaf
+                className="w-3 h-3 text-emerald-500 shrink-0"
+                aria-label={specialDietaryTag}
+              />
+            )}
+            <span className="truncate">{item.title}</span>
+          </h3>
           <motion.button
             id={`fav-btn-${item.id}`}
             onClick={handleFavorite}
@@ -113,7 +124,7 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
         </div>
 
         {(shopName || shop) && (
-          <p className="text-[11px] font-medium text-muted-foreground truncate mt-0.5">{shopName ?? shop?.name}</p>
+          <p className="text-[11px] font-bold text-muted-foreground truncate -mt-0.5">{shopName ?? shop?.name}</p>
         )}
 
         {shop && (

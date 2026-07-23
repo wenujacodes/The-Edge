@@ -23,7 +23,7 @@ export function CartItemRow({ entry }: { entry: CartEntry }) {
         <div className="flex items-start justify-between gap-3 mb-1">
           <div className="min-w-0">
             <div className="font-bold text-[16px] truncate">{c.item.title}</div>
-            <div className="text-xs text-muted-foreground font-mono">
+            <div className="text-xs text-muted-foreground font-mono font-semibold">
               Rs {c.item.price} per unit
             </div>
           </div>

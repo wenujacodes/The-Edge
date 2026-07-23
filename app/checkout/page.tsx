@@ -146,7 +146,7 @@ export default function CheckoutPage() {
                             {c.qty}× {c.item.title}
                             {c.notes && <span className="text-[10px] block italic">&ldquo;{c.notes}&rdquo;</span>}
                           </span>
-                          <span className="font-mono text-muted-foreground">Rs {c.qty * c.item.price}</span>
+                          <span className="font-mono font-semibold text-muted-foreground">Rs {c.qty * c.item.price}</span>
                         </div>
                       ))}
                     </div>

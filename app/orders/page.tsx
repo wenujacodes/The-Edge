@@ -249,7 +249,7 @@ export default function OrdersPage() {
                               day: "numeric",
                               hour: "2-digit",
                               minute: "2-digit",
-                            })} · Rs {order.total}
+                            })} · <span className="font-semibold text-foreground">Rs {order.total}</span>
                           </div>
                         </div>
                       </div>
