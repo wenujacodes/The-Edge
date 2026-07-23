@@ -7,10 +7,36 @@ import { PWABanner } from "@/components/layout/PWABanner";
 import { ShopCard } from "@/components/shop/ShopCard";
 import { FoodCard } from "@/components/shop/FoodCard";
 import { ShopFilterBar } from "@/components/shop/ShopFilterBar";
-import { useMenuItems, useServerFavorites, useShops, useSupabaseUser, useProfile } from "@/lib/supabase/hooks";
+import { useMenuItems, useServerFavorites, useShops, useSupabaseUser, useProfile, useUserOrders } from "@/lib/supabase/hooks";
 import { NotificationLink } from "@/components/layout/NotificationLink";
 import { ShopCardSkeleton, FoodCardSkeleton } from "@/components/ui/Skeleton";
 import type { Shop } from "@/lib/types";
+
+const TIME_SECTIONS = [
+  {
+    maxHour: 11,
+    title: "Breakfast picks",
+    keywords: ["breakfast", "hopper", "roti", "bread", "toast", "egg", "porridge", "dosa", "milk", "tea", "coffee"],
+  },
+  {
+    maxHour: 16,
+    title: "Lunch rush favourites",
+    keywords: ["lunch", "rice", "curry", "biryani", "kottu", "noodle", "meal", "fried rice"],
+  },
+  {
+    maxHour: 24,
+    title: "Snacks & drinks",
+    keywords: ["snack", "drink", "beverage", "juice", "shake", "short eat", "patty", "roll", "cutlet", "sweet", "dessert", "bites"],
+  },
+];
+
+function SectionDivider() {
+  return (
+    <div className="container mx-auto px-4">
+      <div className="h-px bg-border/70" />
+    </div>
+  );
+}
 
 export default function HomePage() {
   const [query, setQuery] = useState("");
@@ -20,6 +46,7 @@ export default function HomePage() {
   const { data: user } = useSupabaseUser();
   const { data: favorites = [] } = useServerFavorites(user?.id);
   const { data: profile } = useProfile(user?.id);
+  const { data: orders = [] } = useUserOrders(user?.id);
   const displayName =
     profile?.displayName ||
     user?.user_metadata?.full_name ||
@@ -47,6 +74,30 @@ export default function HomePage() {
   const favouriteItems = useMemo(() => items.filter((i) => favorites.includes(i.id)), [items, favorites]);
 
   const hasFavorites = favouriteItems.length > 0;
+
+  const timeSection = useMemo(() => {
+    const hour = new Date().getHours();
+    return TIME_SECTIONS.find((s) => hour < s.maxHour) ?? TIME_SECTIONS[TIME_SECTIONS.length - 1];
+  }, []);
+
+  const timeBasedItems = useMemo(() => {
+    const pool = items.filter((i) => i.isAvailable);
+    const matched = pool.filter((i) => {
+      const haystack = `${i.category} ${i.title} ${(i.dietaryTags || []).join(" ")}`.toLowerCase();
+      return timeSection.keywords.some((k) => haystack.includes(k));
+    });
+    return (matched.length >= 4 ? matched : pool).slice(0, 10);
+  }, [items, timeSection]);
+
+  const orderedShopIds = useMemo(() => new Set(orders.map((o) => o.shopId)), [orders]);
+
+  const recommendedItems = useMemo(() => {
+    if (orderedShopIds.size === 0) return [];
+    const exclude = new Set([...favouriteItems, ...recentlyOrdered].map((i) => i.id));
+    return items.filter((i) => i.isAvailable && orderedShopIds.has(i.shopId) && !exclude.has(i.id)).slice(0, 10);
+  }, [items, orderedShopIds, favouriteItems, recentlyOrdered]);
+
+  const hasRecommended = recommendedItems.length > 0;
 
   return (
     <div className="flex-1 bg-background">
@@ -125,7 +176,7 @@ export default function HomePage() {
       </section>
 
       {/* ── SHOPS ── */}
-      <section id="shops" className="container mx-auto px-4 py-8">
+      <section id="shops" className="container mx-auto px-4 py-6">
         <div className="mb-4">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Today&apos;s shops</h2>
         </div>
@@ -134,7 +185,7 @@ export default function HomePage() {
             No shops match these filters.
           </div>
         ) : (
-          <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-8 scroll-pl-4 scroll-pr-4">
+          <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-4 scroll-pl-4 scroll-pr-4">
             {shopsLoading ? (
               Array.from({ length: 4 }).map((_, idx) => (
                 <div key={idx} className={`w-[260px] shrink-0 ${idx === 0 ? 'ml-4' : ''}`}>
@@ -154,62 +205,71 @@ export default function HomePage() {
 
       {/* ── POPULAR PICKS (loading skeleton, unconditional) ── */}
       {itemsLoading && (
-        <section className="container mx-auto px-4 py-8">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-6">Popular picks</h2>
-          <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-8 scroll-pl-4 scroll-pr-4">
-            {Array.from({ length: 4 }).map((_, idx) => (
-              <div key={idx} className={`w-[200px] md:w-[240px] shrink-0 ${idx === 0 ? 'ml-4' : ''}`}>
-                <FoodCardSkeleton />
-              </div>
-            ))}
-          </div>
-        </section>
+        <>
+          <SectionDivider />
+          <section className="container mx-auto px-4 py-6">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">Popular picks</h2>
+            <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-4 scroll-pl-4 scroll-pr-4">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <div key={idx} className={`w-[200px] md:w-[240px] shrink-0 ${idx === 0 ? 'ml-4' : ''}`}>
+                  <FoodCardSkeleton />
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
       )}
 
-      {/* ── FAVOURITES (Conditional) ── */}
-      {hasFavorites && (
-        <section className="container mx-auto px-4 py-8">
-          <div className="mb-6">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Your favourites</h2>
-          </div>
-          <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-8 scroll-pl-4 scroll-pr-4">
-            {favouriteItems.map((item, index) => (
-              <div key={item.id} className={`w-[200px] md:w-[240px] shrink-0 snap-start ${index === 0 ? 'ml-4' : ''} ${index === favouriteItems.length - 1 ? 'mr-4' : ''}`}>
-                <FoodCard item={item} shopName={shopNames.get(item.shopId)} />
+      {[
+        {
+          key: "time",
+          show: timeBasedItems.length > 0,
+          title: timeSection.title,
+          list: timeBasedItems,
+        },
+        {
+          key: "favourites",
+          show: hasFavorites,
+          title: "Your favourites",
+          list: favouriteItems,
+        },
+        {
+          key: "recommended",
+          show: hasRecommended,
+          title: "Recommended for you",
+          list: recommendedItems,
+        },
+        {
+          key: "most-ordered",
+          show: mostOrdered.length > 0,
+          title: "Most ordered today",
+          list: mostOrdered,
+        },
+        {
+          key: "recently-ordered",
+          show: recentlyOrdered.length > 0,
+          title: "Recently ordered",
+          list: recentlyOrdered,
+        },
+      ]
+        .filter((section) => section.show)
+        .map((section) => (
+          <div key={section.key}>
+            <SectionDivider />
+            <section className="container mx-auto px-4 py-6">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">{section.title}</h2>
+              <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-4 scroll-pl-4 scroll-pr-4">
+                {section.list.map((item, index) => (
+                  <div key={item.id} className={`w-[200px] md:w-[240px] shrink-0 snap-start ${index === 0 ? 'ml-4' : ''} ${index === section.list.length - 1 ? 'mr-4' : ''}`}>
+                    <FoodCard item={item} shopName={shopNames.get(item.shopId)} />
+                  </div>
+                ))}
               </div>
-            ))}
+            </section>
           </div>
-        </section>
-      )}
+        ))}
 
-      {/* ── MOST ORDERED ── */}
-      {mostOrdered.length > 0 && (
-        <section className="container mx-auto px-4 py-8">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-6">Most ordered today</h2>
-
-          <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-8 scroll-pl-4 scroll-pr-4">
-            {mostOrdered.map((item, index) => (
-              <div key={item.id} className={`w-[200px] md:w-[240px] shrink-0 snap-start ${index === 0 ? 'ml-4' : ''} ${index === mostOrdered.length - 1 ? 'mr-4' : ''}`}>
-                <FoodCard item={item} shopName={shopNames.get(item.shopId)} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── RECENTLY ORDERED ── */}
-      {recentlyOrdered.length > 0 && (
-        <section className="container mx-auto px-4 py-8 mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-6">Recently ordered</h2>
-          <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-8 scroll-pl-4 scroll-pr-4">
-            {recentlyOrdered.map((item, index) => (
-              <div key={item.id} className={`w-[200px] md:w-[240px] shrink-0 snap-start ${index === 0 ? 'ml-4' : ''} ${index === recentlyOrdered.length - 1 ? 'mr-4' : ''}`}>
-                <FoodCard item={item} shopName={shopNames.get(item.shopId)} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <div className="pb-10" />
       <PWABanner />
     </div>
   );
