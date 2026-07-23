@@ -1,16 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, Store, Clock, Star, UtensilsCrossed, ArrowUpDown } from "lucide-react";
+import { ChevronDown, Star, ArrowUpDown } from "lucide-react";
 import { Shop } from "@/lib/types";
 
 type SortOption = "default" | "rating" | "prepTime" | "name";
 
-const prepOptions = [
-  { label: "Any pickup time", value: null as number | null },
-  { label: "Under 15 min", value: 15 },
-  { label: "Under 30 min", value: 30 },
-];
+function parsePrepMinutes(prepTime: string) {
+  return parseInt(prepTime, 10) || Infinity;
+}
 
 const sortOptions: { label: string; value: SortOption }[] = [
   { label: "Recommended", value: "default" },
@@ -18,10 +16,6 @@ const sortOptions: { label: string; value: SortOption }[] = [
   { label: "Prep time", value: "prepTime" },
   { label: "Name (A-Z)", value: "name" },
 ];
-
-function parsePrepMinutes(prepTime: string) {
-  return parseInt(prepTime, 10) || Infinity;
-}
 
 function Dropdown({
   label,
@@ -102,25 +96,13 @@ export function ShopFilterBar({
   shops: Shop[];
   onFilteredShopsChange: (filtered: Shop[]) => void;
 }) {
-  const [openNowOnly, setOpenNowOnly] = React.useState(false);
-  const [maxPrepTime, setMaxPrepTime] = React.useState<number | null>(null);
   const [highestRatedOnly, setHighestRatedOnly] = React.useState(false);
-  const [category, setCategory] = React.useState<string | null>(null);
   const [sortBy, setSortBy] = React.useState<SortOption>("default");
-  const [openDropdown, setOpenDropdown] = React.useState<null | "prep" | "category" | "sort">(null);
-
-  const categories = React.useMemo(() => {
-    const set = new Set<string>();
-    shops.forEach((s) => s.categories.forEach((c) => set.add(c)));
-    return Array.from(set);
-  }, [shops]);
+  const [sortOpen, setSortOpen] = React.useState(false);
 
   const filteredShops = React.useMemo(() => {
     let list = shops.filter((s) => {
-      if (openNowOnly && !s.isOpen) return false;
-      if (maxPrepTime !== null && parsePrepMinutes(s.prepTime) > maxPrepTime) return false;
       if (highestRatedOnly && s.rating < 4.5) return false;
-      if (category && !s.categories.includes(category)) return false;
       return true;
     });
 
@@ -132,50 +114,15 @@ export function ShopFilterBar({
     });
 
     return list;
-  }, [shops, openNowOnly, maxPrepTime, highestRatedOnly, category, sortBy]);
+  }, [shops, highestRatedOnly, sortBy]);
 
   React.useEffect(() => {
     onFilteredShopsChange(filteredShops);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredShops]);
 
-  const toggle = (key: "prep" | "category" | "sort") =>
-    setOpenDropdown((current) => (current === key ? null : key));
-
   return (
     <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
-      <button
-        type="button"
-        onClick={() => setOpenNowOnly((v) => !v)}
-        className={`pill flex items-center gap-1.5 px-4 py-2 text-sm font-medium whitespace-nowrap transition-smooth focus-dashed shrink-0 ${
-          openNowOnly ? "bg-foreground text-background" : "bg-secondary text-foreground hover:bg-accent"
-        }`}
-      >
-        <Store className="w-4 h-4" />
-        Open Now
-      </button>
-
-      <Dropdown
-        label={maxPrepTime ? `Under ${maxPrepTime} min` : "Quick pickup"}
-        icon={Clock}
-        active={maxPrepTime !== null}
-        isOpen={openDropdown === "prep"}
-        onToggle={() => toggle("prep")}
-        onClose={() => setOpenDropdown(null)}
-      >
-        {prepOptions.map((opt) => (
-          <DropdownOption
-            key={opt.label}
-            label={opt.label}
-            selected={maxPrepTime === opt.value}
-            onClick={() => {
-              setMaxPrepTime(opt.value);
-              setOpenDropdown(null);
-            }}
-          />
-        ))}
-      </Dropdown>
-
       <button
         type="button"
         onClick={() => setHighestRatedOnly((v) => !v)}
@@ -187,44 +134,13 @@ export function ShopFilterBar({
         Highest rated
       </button>
 
-      {categories.length > 0 && (
-        <Dropdown
-          label={category ?? "Category"}
-          icon={UtensilsCrossed}
-          active={category !== null}
-          isOpen={openDropdown === "category"}
-          onToggle={() => toggle("category")}
-          onClose={() => setOpenDropdown(null)}
-        >
-          <DropdownOption
-            label="All categories"
-            selected={category === null}
-            onClick={() => {
-              setCategory(null);
-              setOpenDropdown(null);
-            }}
-          />
-          {categories.map((c) => (
-            <DropdownOption
-              key={c}
-              label={c}
-              selected={category === c}
-              onClick={() => {
-                setCategory(c);
-                setOpenDropdown(null);
-              }}
-            />
-          ))}
-        </Dropdown>
-      )}
-
       <Dropdown
         label="Sort"
         icon={ArrowUpDown}
         active={sortBy !== "default"}
-        isOpen={openDropdown === "sort"}
-        onToggle={() => toggle("sort")}
-        onClose={() => setOpenDropdown(null)}
+        isOpen={sortOpen}
+        onToggle={() => setSortOpen((v) => !v)}
+        onClose={() => setSortOpen(false)}
       >
         {sortOptions.map((opt) => (
           <DropdownOption
@@ -233,7 +149,7 @@ export function ShopFilterBar({
             selected={sortBy === opt.value}
             onClick={() => {
               setSortBy(opt.value);
-              setOpenDropdown(null);
+              setSortOpen(false);
             }}
           />
         ))}

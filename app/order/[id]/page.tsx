@@ -249,7 +249,7 @@ export default function OrderStatusPage() {
         {/* Actions */}
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href="/browse"
+            href="/"
             className="inline-flex items-center gap-2 pill bg-foreground text-background px-6 py-2.5 font-bold hover:bg-foreground/90 transition-smooth focus-dashed text-sm"
           >
             Order more <ArrowRight className="w-4 h-4" />

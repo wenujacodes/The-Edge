@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PWABanner } from "@/components/layout/PWABanner";
@@ -57,10 +56,10 @@ export default function HomePage() {
           <div className="animate-fade-up">
             {/* Profile Greeting */}
             <div className="flex items-center justify-between mb-8 md:hidden">
-              <Link href="/profile">
+              <div>
                 <div className="text-[13px] text-muted-foreground font-medium">{greeting}</div>
                 <div className="text-lg font-semibold leading-tight text-foreground">{displayName.split(' ')[0]}</div>
-              </Link>
+              </div>
               <NotificationLink className="w-7 h-7 hover:opacity-80" iconClassName="w-6 h-6" />
             </div>
 
@@ -108,7 +107,7 @@ export default function HomePage() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && query.trim()) {
-                router.push(`/browse?q=${encodeURIComponent(query.trim())}`);
+                router.push(`/?q=${encodeURIComponent(query.trim())}`);
               }
             }}
             placeholder="Search food, drinks, or shops…"

@@ -42,7 +42,7 @@ export default function CartPage() {
             Add a few things from the menu to see them here. Each shop prepares your order separately.
           </p>
           <Link
-            href="/browse"
+            href="/"
             className="inline-flex mt-8 pill bg-foreground text-background px-6 py-2.5 text-sm font-bold focus-dashed hover:bg-foreground/90 transition-colors"
           >
             Start shopping

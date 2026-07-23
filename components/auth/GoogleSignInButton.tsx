@@ -121,7 +121,7 @@ export function GoogleSignInButton({
         type="button"
         onClick={handleGoogleSignIn}
         disabled={loading}
-        className="group relative flex h-12 w-full items-center justify-center gap-3 rounded-full border border-transparent shadow-soft bg-background px-5 text-sm font-bold text-foreground transition-colors hover:border-muted-foreground/50 hover:bg-secondary disabled:pointer-events-none disabled:opacity-60"
+        className="group relative flex h-12 w-full items-center justify-center gap-3 rounded-full border border-border shadow-soft bg-background px-5 text-sm font-bold text-foreground transition-colors hover:border-muted-foreground/50 hover:bg-secondary disabled:pointer-events-none disabled:opacity-60"
       >
         {/* Removed green gradient hover effect */}
         <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white">

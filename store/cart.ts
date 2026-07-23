@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { MenuItem } from "@/lib/types";
 
 export type CartEntry = {
@@ -47,7 +48,8 @@ type CartState = {
 };
 
 export const useCart = create<CartState>()(
-  (set, get) => ({
+  persist(
+    (set, get) => ({
     items: [],
     recentlyViewed: [],
     isDrawerOpen: false,
@@ -157,5 +159,10 @@ export const useCart = create<CartState>()(
       });
       return map;
     },
-  })
+    }),
+    {
+      name: "edge-cart-storage",
+      partialize: (state) => ({ items: state.items, recentlyViewed: state.recentlyViewed }),
+    }
+  )
 );

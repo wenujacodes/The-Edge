@@ -12,7 +12,7 @@ const BUBBLE =
 
 const navItems = [
   { href: "/", label: "Home", Icon: HomeIcon },
-  { href: "/browse", label: "Search", Icon: SearchIcon },
+  { href: "/#shops", label: "Search", Icon: SearchIcon },
   { href: "/cart", label: "Cart", Icon: CartIcon },
   { href: "/profile", label: "Profile", Icon: ProfileIcon },
 ] as const;
@@ -83,7 +83,7 @@ export const BottomNav = () => {
                   key={href}
                   layout
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  className="shrink-0"
+                  className="relative shrink-0"
                 >
                   <Link
                     href={href}
@@ -103,12 +103,12 @@ export const BottomNav = () => {
                         {label}
                       </motion.span>
                     )}
-                    {href === "/cart" && mounted && count > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground animate-scale-in">
-                        {count}
-                      </span>
-                    )}
                   </Link>
+                  {href === "/cart" && mounted && count > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground animate-scale-in z-10">
+                      {count}
+                    </span>
+                  )}
                 </motion.div>
               );
             })}

@@ -86,7 +86,7 @@ export default function CheckoutPage() {
           </div>
           <h1 className="text-2xl font-bold">Your cart is empty</h1>
           <p className="text-muted-foreground">Looks like you&apos;ve already checked out or cleared your cart.</p>
-          <Button onClick={() => router.push("/browse")} className="pill px-6">
+          <Button onClick={() => router.push("/")} className="pill px-6">
             Go back to shops
           </Button>
         </div>

@@ -86,11 +86,11 @@ export function AuthLayout({ initialMode: propMode }: AuthLayoutProps) {
                           setAuthMode("login");
                         }
                       }}
-                      className={`px-4 py-1.5 rounded-full text-[11px] font-bold transition-colors ${authMode === "login" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      className={`px-4 py-1.5 rounded-full text-[11px] font-bold transition-colors ${authMode === "login" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
                     >
                       Log In
                     </Link>
-                    <Link 
+                    <Link
                       href="/signup"
                       onClick={(e) => {
                         if (pathname === "/signup") {
@@ -98,7 +98,7 @@ export function AuthLayout({ initialMode: propMode }: AuthLayoutProps) {
                           setAuthMode("signup");
                         }
                       }}
-                      className={`px-4 py-1.5 rounded-full text-[11px] font-bold transition-colors ${authMode === "signup" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      className={`px-4 py-1.5 rounded-full text-[11px] font-bold transition-colors ${authMode === "signup" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
                     >
                       Sign Up
                     </Link>
@@ -171,7 +171,7 @@ export function AuthLayout({ initialMode: propMode }: AuthLayoutProps) {
 
           <footer className="flex justify-between items-center text-[10px] text-muted-foreground/40 mt-auto pt-8">
             
-            <Link href="/vendor/login" className="hover:text-foreground transition-colors flex items-center gap-1 font-medium uppercase tracking-widest">
+            <Link href="/vendor/login" className="text-foreground hover:opacity-70 transition-opacity flex items-center gap-1 font-medium uppercase tracking-widest">
               Vendor sign in <ArrowRight className="w-3 h-3" />
             </Link>
           </footer>

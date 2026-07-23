@@ -70,15 +70,8 @@ export function CartDrawer() {
             </div>
 
             <div className="shrink-0 border-t border-border p-6 space-y-4">
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/50 shadow-soft">
-                <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  You will be redirected to process payments for each shop one after another.
-                </p>
-              </div>
-
               <div className="flex justify-between items-baseline">
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Grand Total</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total</span>
                 <span className="font-mono text-2xl font-black text-primary">Rs {total()}</span>
               </div>
 
@@ -88,6 +81,13 @@ export function CartDrawer() {
               >
                 Go to checkout <ArrowRight className="w-5 h-5" />
               </button>
+
+              <div className="flex items-start gap-3 p-3 rounded-2xl bg-secondary/50 shadow-soft">
+                <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  You will be redirected to process payments for each shop one after another.
+                </p>
+              </div>
             </div>
           </motion.div>
         </div>

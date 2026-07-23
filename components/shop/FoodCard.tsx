@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useAnimation } from "framer-motion";
 import { Check, Heart, Plus, Star } from "lucide-react";
 import { toast } from "sonner";
 import { MenuItem } from "@/lib/types";
@@ -28,10 +28,26 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
   const fav = optimisticFav ?? serverFav;
   const { data: shop } = useShopById(item.shopId);
   const isInCart = items.some((cartItem) => cartItem.item.id === item.id);
+  const heartControls = useAnimation();
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
     setOptimisticFav(null);
   }, [serverFav]);
+
+  // Pop the heart on every toggle without ever remounting it — remounting the
+  // element caused a one-frame flash of the wrong color before the fill class
+  // finished applying.
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    heartControls.start({
+      scale: [0.7, 1.15, 1],
+      transition: { duration: 0.3, ease: "easeOut" },
+    });
+  }, [fav, heartControls]);
 
   const handleFavorite = () => {
     if (!userId) {
@@ -86,13 +102,7 @@ export const FoodCard = ({ item, compact = false, shopName }: FoodCardProps) => 
             aria-label={fav ? "Remove from favorites" : "Add to favorites"}
             className="w-8 h-8 -mt-1 -mr-1 rounded-full grid place-items-center focus-dashed transition-smooth hover:bg-secondary disabled:opacity-60 shrink-0"
           >
-            <motion.span
-              key={fav ? "on" : "off"}
-              initial={{ scale: 0.6 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 500, damping: 15 }}
-              className="block"
-            >
+            <motion.span animate={heartControls} className="block">
               <Heart
                 className={`w-5 h-5 ${
                   fav ? "fill-red-500 text-red-500" : "text-muted-foreground"
