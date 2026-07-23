@@ -7,9 +7,11 @@ import { useRouter } from "next/navigation";
 import { PWABanner } from "@/components/layout/PWABanner";
 import { ShopCard } from "@/components/shop/ShopCard";
 import { FoodCard } from "@/components/shop/FoodCard";
+import { ShopFilterBar } from "@/components/shop/ShopFilterBar";
 import { useMenuItems, useServerFavorites, useShops, useSupabaseUser, useProfile } from "@/lib/supabase/hooks";
 import { NotificationLink } from "@/components/layout/NotificationLink";
 import { ShopCardSkeleton, FoodCardSkeleton } from "@/components/ui/Skeleton";
+import type { Shop } from "@/lib/types";
 
 export default function HomePage() {
   const [query, setQuery] = useState("");
@@ -39,12 +41,10 @@ export default function HomePage() {
   );
 
   const mostOrdered = useMemo(() => items.filter((i) => i.popular && i.isAvailable), [items]);
-  const recentlyOrdered = useMemo(() => items.slice(0, 6), [items]); 
-  const todaysShops = useMemo(
-    () => [...shops].sort((a, b) => Number(b.isOpen) - Number(a.isOpen)),
-    [shops]
-  );
-  
+  const recentlyOrdered = useMemo(() => items.slice(0, 6), [items]);
+  const [todaysShops, setTodaysShops] = useState<Shop[]>([]);
+
+
   const favouriteItems = useMemo(() => items.filter((i) => favorites.includes(i.id)), [items, favorites]);
 
   const hasFavorites = favouriteItems.length > 0;
@@ -121,24 +121,35 @@ export default function HomePage() {
 
       {/* ── SHOPS ── */}
       <section id="shops" className="container mx-auto px-4 py-8">
-        <div className="mb-6">
+        <div className="mb-4">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Today&apos;s shops</h2>
         </div>
-        <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-8 scroll-pl-4 scroll-pr-4">
-          {shopsLoading ? (
-            Array.from({ length: 4 }).map((_, idx) => (
-              <div key={idx} className={`w-[260px] shrink-0 ${idx === 0 ? 'ml-4' : ''}`}>
-                <ShopCardSkeleton />
-              </div>
-            ))
-          ) : (
-            todaysShops.map((s, index) => (
-              <div key={s.id} className={`w-[260px] shrink-0 snap-start ${index === 0 ? 'ml-4' : ''} ${index === todaysShops.length - 1 ? 'mr-4' : ''}`}>
-                <ShopCard shop={s} />
-              </div>
-            ))
-          )}
-        </div>
+        {!shopsLoading && shops.length > 0 && (
+          <div className="mb-4">
+            <ShopFilterBar shops={shops} onFilteredShopsChange={setTodaysShops} />
+          </div>
+        )}
+        {!shopsLoading && shops.length > 0 && todaysShops.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm bg-secondary/30 rounded-3xl border border-dashed border-border">
+            No shops match these filters.
+          </div>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto snap-x scrollbar-hide -mx-4 pt-2 pb-8 scroll-pl-4 scroll-pr-4">
+            {shopsLoading ? (
+              Array.from({ length: 4 }).map((_, idx) => (
+                <div key={idx} className={`w-[260px] shrink-0 ${idx === 0 ? 'ml-4' : ''}`}>
+                  <ShopCardSkeleton />
+                </div>
+              ))
+            ) : (
+              todaysShops.map((s, index) => (
+                <div key={s.id} className={`w-[260px] shrink-0 snap-start ${index === 0 ? 'ml-4' : ''} ${index === todaysShops.length - 1 ? 'mr-4' : ''}`}>
+                  <ShopCard shop={s} />
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </section>
 
       {/* ── POPULAR PICKS (loading skeleton, unconditional) ── */}
